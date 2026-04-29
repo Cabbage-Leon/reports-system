@@ -4,9 +4,7 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  experimental: {
-    serverActions: true,
-  },
+
   eslint: {
     ignoreDuringBuilds: true,
   },
