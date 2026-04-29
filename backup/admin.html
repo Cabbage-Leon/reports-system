@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报告管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF', success: '#00B42A', warning: '#FF7D00', danger: '#F53F3F'
+                    },
+                    fontFamily: { inter: ['Inter', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+      .card { @apply bg-white rounded-2xl shadow-sm hover:shadow-md transition-all }
+      .btn { @apply px-4 py-2 rounded-xl flex items-center gap-2 font-medium text-sm }
+      .btn-primary { @apply bg-primary text-white hover:bg-primary/90 }
+      .btn-outline { @apply border border-gray-200 hover:bg-gray-50 }
+      .btn-danger { @apply bg-danger/10 text-danger hover:bg-danger/20 }
+      .input-admin { @apply w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-primary focus:ring-1 focus:ring-primary }
+      .sidebar-item { @apply flex items-center gap-2 px-4 py-3 rounded-xl hover:bg-primary/5 cursor-pointer transition-colors }
+      .sidebar-item.active { @apply bg-primary/10 text-primary font-medium }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen font-inter">
+    <!-- 头部 -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fa fa-cog text-primary text-lg"></i>
+                <h1 class="font-bold text-lg">报告管理后台</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="btn btn-outline text-sm">返回博客</a>
+                <button id="uploadBtn" class="btn btn-primary text-sm"><i class="fa fa-upload"></i>上传报告</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体 -->
+    <div class="container mx-auto px-4 py-6 flex gap-6">
+        <!-- 侧边栏 -->
+        <aside class="w-64 hidden md:block sticky top-24 h-fit bg-white rounded-2xl p-5">
+            <div class="mb-6">
+                <h3 class="text-xs text-gray-500 mb-2 font-medium">报告类型</h3>
+                <div class="space-y-1">
+                    <div class="sidebar-item active" data-type="all">全部报告</div>
+                    <div class="sidebar-item" data-type="day">日报</div>
+                    <div class="sidebar-item" data-type="week">周报</div>
+                    <div class="sidebar-item" data-type="month">月报</div>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xs text-gray-500 mb-2 font-medium">主题分类</h3>
+                <div id="topicList" class="space-y-1">
+                </div>
+            </div>
+
+            <!-- 统计 -->
+            <div class="mt-6 pt-6 border-t border-gray-100">
+                <div class="text-xs text-gray-500 mb-2">数据统计</div>
+                <div id="stats" class="text-sm text-gray-700 space-y-1">
+                </div>
+            </div>
+        </aside>
+
+        <!-- 内容区 -->
+        <main class="flex-1">
+            <!-- 搜索 -->
+            <div class="card p-5 mb-6">
+                <div class="flex gap-3">
+                    <input id="searchInput" placeholder="搜索报告标题、主题..." class="input-admin flex-1">
+                </div>
+            </div>
+
+            <!-- 报告列表 -->
+            <div id="reportList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            </div>
+
+            <!-- 空状态 -->
+            <div id="empty" class="hidden text-center py-16 text-gray-400">
+                <i class="fa fa-file-o text-3xl mb-2"></i>
+                <p>暂无报告</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- 上传弹窗 -->
+    <div id="uploadModal" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-lg shadow-lg animate-fade">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-xl">上传HTML报告</h3>
+                <button id="closeUpload"
+                    class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <input type="file" id="file" accept=".html" class="w-full">
+                <input id="title" placeholder="报告标题" class="input-admin">
+                <select id="type" class="input-admin">
+                    <option value="week">周报</option>
+                    <option value="day">日报</option>
+                    <option value="month">月报</option>
+                </select>
+                <input id="topic" placeholder="主题分类" class="input-admin">
+                <button id="doUpload" class="btn btn-primary w-full">确认上传</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div id="editModal" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-lg shadow-lg animate-fade">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-xl">编辑报告</h3>
+                <button id="closeEdit" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="editId">
+                <input id="editTitle" placeholder="报告标题" class="input-admin">
+                <select id="editType" class="input-admin">
+                    <option value="week">周报</option>
+                    <option value="day">日报</option>
+                    <option value="month">月报</option>
+                </select>
+                <input id="editTopic" placeholder="主题分类" class="input-admin">
+                <button id="doEdit" class="btn btn-primary w-full">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 阅读弹窗 -->
+    <div id="readModal" class="fixed inset-0 z-50 hidden">
+        <div class="bg-white h-full max-w-6xl mx-auto animate-fade">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 id="readTitle" class="font-bold"></h3>
+                <div class="flex gap-2">
+                    <button id="toEditBtn" class="btn btn-outline text-sm">编辑</button>
+                    <button id="delBtn" class="btn btn-danger text-sm">删除</button>
+                    <button id="closeRead" class="btn text-sm">关闭</button>
+                </div>
+            </div>
+            <div class="p-6 h-[calc(100vh-170px)]">
+                <iframe id="readFrame" class="w-full h-full border-none rounded-xl"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'personal_reports';
+        let currentId = '';
+        let currentFilterType = 'all';
+        let currentFilterTopic = 'all';
+
+        const defaultReport = {
+            id: 'report_1', title: '一周政策汇总_2026-04-28', type: 'week', typeText: '周报', topic: '政策汇总', createTime: '2026-04-28',
+            htmlContent: `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>一周政策汇总_2026-04-28</title><style>body{font-family:Arial;margin:0;padding:20px;background:#f9f9f9}.container{max-width:1000px;margin:0 auto;background:white;padding:30px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}h1{color:#165DFF;text-align:center;border-bottom:2px solid #eee;padding-bottom:15px}.section{margin:24px 0}.section h3{color:#333;border-left:4px solid #165DFF;padding-left:12px;margin-bottom:12px}.item{padding:12px 16px;background:#f5f7fa;border-radius:8px;margin:8px 0}</style></head><body><div class="container"><h1>一周政策汇总（2026-04-28）</h1><div class="section"><h3>一、宏观政策</h3><div class="item">国务院发布数字化转型推进方案，强化数据要素市场化配置</div><div class="item">财政部发布减税降费最新政策，支持中小微企业发展</div></div><div class="section"><h3>二、行业政策</h3><div class="item">工信部发布人工智能产业高质量发展行动计划</div><div class="item">金融监管总局完善科技金融服务体系政策</div></div><div class="section"><h3>三、地方政策</h3><div class="item">北京、上海、广东同步发布数据条例配套细则</div><div class="item">多地出台新能源汽车产业支持新政</div></div></div></body></html>`
+        };
+
+        // 数据方法
+        function getReports() {
+            const d = localStorage.getItem(STORAGE_KEY);
+            if (!d) { localStorage.setItem(STORAGE_KEY, JSON.stringify([defaultReport])); return [defaultReport]; }
+            return JSON.parse(d);
+        }
+
+        function saveReport(report) {
+            const list = getReports();
+            list.unshift(report);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            refresh();
+        }
+
+        function updateReport(id, data) {
+            const list = getReports();
+            const idx = list.findIndex(i => i.id === id);
+            list[idx] = { ...list[idx], ...data };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            refresh();
+        }
+
+        function deleteReport(id) {
+            const list = getReports().filter(i => i.id !== id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            refresh();
+        }
+
+        // 渲染
+        function refresh() {
+            renderList();
+            renderTopics();
+            renderStats();
+        }
+
+        // 统计
+        function renderStats() {
+            const list = getReports();
+            const day = list.filter(i => i.type === 'day').length;
+            const week = list.filter(i => i.type === 'week').length;
+            const month = list.filter(i => i.type === 'month').length;
+            document.getElementById('stats').innerHTML = `
+        <div>总计：${list.length} 篇</div>
+        <div>日报：${day} 篇</div>
+        <div>周报：${week} 篇</div>
+        <div>月报：${month} 篇</div>
+      `;
+        }
+
+        // 主题
+        function renderTopics() {
+            const list = getReports();
+            const topics = new Set();
+            list.forEach(i => topics.add(i.topic));
+            const container = document.getElementById('topicList');
+            container.innerHTML = `<div class="sidebar-item" data-topic="all">全部分类</div>`;
+            Array.from(topics).forEach(t => {
+                container.innerHTML += `<div class="sidebar-item" data-topic="${t}">${t}</div>`;
+            });
+            bindTopicEvents();
+        }
+
+        // 列表
+        function renderList() {
+            const container = document.getElementById('reportList');
+            const empty = document.getElementById('empty');
+            let list = getReports().sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+            // 筛选
+            if (currentFilterType !== 'all') list = list.filter(i => i.type === currentFilterType);
+            if (currentFilterTopic !== 'all') list = list.filter(i => i.topic === currentFilterTopic);
+
+            // 搜索
+            const kw = document.getElementById('searchInput').value.toLowerCase();
+            if (kw) list = list.filter(i => i.title.toLowerCase().includes(kw) || i.topic.toLowerCase().includes(kw));
+
+            if (list.length === 0) {
+                container.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            container.innerHTML = list.map(i => `
+        <div class="card p-5">
+          <div class="flex justify-between mb-3">
+            <span class="text-xs font-medium ${i.type === 'day' ? 'text-success' : i.type === 'week' ? 'text-primary' : 'text-warning'}">${i.typeText}</span>
+            <span class="text-xs text-gray-400">${i.createTime}</span>
+          </div>
+          <h4 class="font-semibold mb-3 line-clamp-2">${i.title}</h4>
+          <div class="text-xs text-gray-500 mb-4">${i.topic}</div>
+          <div class="flex gap-2">
+            <button onclick="read('${i.id}')" class="btn bg-primary/10 text-primary flex-1 justify-center">查看</button>
+            <button onclick="edit('${i.id}')" class="btn btn-outline flex-1 justify-center">编辑</button>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        // 阅读/编辑/删除
+        window.read = (id) => {
+            currentId = id;
+            const r = getReports().find(i => i.id === id);
+            document.getElementById('readTitle').innerText = r.title;
+            document.getElementById('readFrame').srcdoc = r.htmlContent;
+            document.getElementById('readModal').style.display = 'block';
+        }
+
+        window.edit = (id) => {
+            currentId = id;
+            const r = getReports().find(i => i.id === id);
+            document.getElementById('editId').value = id;
+            document.getElementById('editTitle').value = r.title;
+            document.getElementById('editType').value = r.type;
+            document.getElementById('editTopic').value = r.topic;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 打开上传
+            document.getElementById('uploadBtn').onclick = () => {
+                document.getElementById('uploadModal').style.display = 'flex';
+            }
+
+            // 关闭弹窗
+            document.getElementById('closeUpload').onclick = () => {
+                document.getElementById('uploadModal').style.display = 'none';
+            }
+            document.getElementById('closeEdit').onclick = () => {
+                document.getElementById('editModal').style.display = 'none';
+            }
+            document.getElementById('closeRead').onclick = () => {
+                document.getElementById('readModal').style.display = 'none';
+            }
+
+            // 阅读页编辑
+            document.getElementById('toEditBtn').onclick = () => {
+                document.getElementById('readModal').style.display = 'none';
+                edit(currentId);
+            }
+
+            // 删除
+            document.getElementById('delBtn').onclick = () => {
+                if (!confirm('确定删除该报告？')) return;
+                deleteReport(currentId);
+                document.getElementById('readModal').style.display = 'none';
+            }
+
+            // 上传提交
+            document.getElementById('doUpload').onclick = () => {
+                const file = document.getElementById('file').files[0];
+                const title = document.getElementById('title').value;
+                const type = document.getElementById('type').value;
+                const topic = document.getElementById('topic').value;
+                if (!file || !title || !type || !topic) return alert('请填写完整信息');
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    saveReport({
+                        id: 'r' + Date.now(), title, type, topic,
+                        typeText: type === 'day' ? '日报' : type === 'week' ? '周报' : '月报',
+                        createTime: new Date().toISOString().split('T')[0],
+                        htmlContent: e.target.result
+                    });
+                    document.getElementById('uploadModal').style.display = 'none';
+                };
+                reader.readAsText(file);
+            }
+
+            // 编辑提交
+            document.getElementById('doEdit').onclick = () => {
+                const id = document.getElementById('editId').value;
+                const title = document.getElementById('editTitle').value;
+                const type = document.getElementById('editType').value;
+                const topic = document.getElementById('editTopic').value;
+                if (!title || !type || !topic) return alert('请填写完整');
+
+                updateReport(id, {
+                    title, type, topic,
+                    typeText: type === 'day' ? '日报' : type === 'week' ? '周报' : '月报'
+                });
+                document.getElementById('editModal').style.display = 'none';
+            }
+
+            // 搜索
+            document.getElementById('searchInput').oninput = renderList;
+
+            // 类型筛选
+            document.querySelectorAll('[data-type]').forEach(el => {
+                el.onclick = () => {
+                    document.querySelectorAll('[data-type]').forEach(i => i.classList.remove('active'));
+                    el.classList.add('active');
+                    currentFilterType = el.dataset.type;
+                    renderList();
+                }
+            });
+        }
+
+        // 主题筛选
+        function bindTopicEvents() {
+            document.querySelectorAll('[data-topic]').forEach(el => {
+                el.onclick = () => {
+                    currentFilterTopic = el.dataset.topic;
+                    renderList();
+                }
+            });
+        }
+
+        // 初始化
+        window.onload = () => {
+            bindEvents();
+            refresh();
+        }
+    </script>
+    <style>
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade {
+            animation: fade 0.3s ease forwards;
+        }
+    </style>
+</body>
+
+</html>

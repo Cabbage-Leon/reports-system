@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人报告 | 博客归档</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#165DFF' },
+                    fontFamily: { inter: ['Inter', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+      .article-card { @apply bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100 }
+      .badge { @apply px-2.5 py-1 rounded-full text-xs font-medium }
+      .glass { @apply bg-white/90 backdrop-blur-md }
+      .input-blog { @apply w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 font-inter text-gray-800 min-h-screen">
+    <!-- 导航 -->
+    <header class="glass sticky top-0 z-40 border-b border-gray-200">
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fa fa-book text-primary text-xl"></i>
+                <h1 class="text-lg font-bold">个人报告归档</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="admin.html" class="text-sm text-gray-500 hover:text-primary transition-colors">管理后台</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 内容区 -->
+    <main class="max-w-5xl mx-auto px-4 py-10">
+        <!-- 头部 -->
+        <div class="text-center mb-10">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-3">日报 | 周报 | 月报</h2>
+            <p class="text-gray-500 max-w-xl mx-auto mb-6">工作 · 政策 · 行业研究 · 日常总结</p>
+
+            <!-- 搜索 -->
+            <div class="max-w-xl mx-auto relative">
+                <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input id="searchInput" type="text" placeholder="搜索报告标题、主题..." class="input-blog pl-11">
+            </div>
+        </div>
+
+        <!-- 筛选 -->
+        <div class="flex flex-wrap justify-center gap-3 mb-8">
+            <button data-type="all" class="badge bg-primary text-white active-filter">全部</button>
+            <button data-type="day" class="badge bg-gray-100 hover:bg-primary/10">日报</button>
+            <button data-type="week" class="badge bg-gray-100 hover:bg-primary/10">周报</button>
+            <button data-type="month" class="badge bg-gray-100 hover:bg-primary/10">月报</button>
+        </div>
+
+        <!-- 标签筛选 -->
+        <div class="max-w-3xl mx-auto mb-10">
+            <div class="flex flex-wrap justify-center gap-2" id="topicTags">
+            </div>
+        </div>
+
+        <!-- 文章列表 -->
+        <div id="articleList" class="grid md:grid-cols-2 gap-6">
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="hidden text-center py-16 text-gray-400">
+            <i class="fa fa-file-text-o text-3xl mb-3"></i>
+            <p>暂无匹配的报告</p>
+        </div>
+    </main>
+
+    <!-- 阅读弹窗 -->
+    <div id="readModal" class="fixed inset-0 bg-black/10 backdrop-blur-sm z-50 hidden">
+        <div class="h-full bg-white max-w-6xl mx-auto animate-fade-in">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 id="modalTitle" class="font-bold text-lg"></h3>
+                <button id="closeModal" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 h-[calc(100vh-170px)]">
+                <iframe id="readFrame" class="w-full h-full border-none rounded-xl"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'personal_reports';
+        let currentType = 'all';
+        let currentTopic = 'all';
+
+        // 默认数据
+        const defaultReport = {
+            id: 'report_1', title: '一周政策汇总_2026-04-28', type: 'week', typeText: '周报', topic: '政策汇总', createTime: '2026-04-28',
+            htmlContent: `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>一周政策汇总_2026-04-28</title><style>body{font-family:Arial;margin:0;padding:20px;background:#f9f9f9}.container{max-width:1000px;margin:0 auto;background:white;padding:30px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}h1{color:#165DFF;text-align:center;border-bottom:2px solid #eee;padding-bottom:15px}.section{margin:24px 0}.section h3{color:#333;border-left:4px solid #165DFF;padding-left:12px;margin-bottom:12px}.item{padding:12px 16px;background:#f5f7fa;border-radius:8px;margin:8px 0}</style></head><body><div class="container"><h1>一周政策汇总（2026-04-28）</h1><div class="section"><h3>一、宏观政策</h3><div class="item">国务院发布数字化转型推进方案，强化数据要素市场化配置</div><div class="item">财政部发布减税降费最新政策，支持中小微企业发展</div></div><div class="section"><h3>二、行业政策</h3><div class="item">工信部发布人工智能产业高质量发展行动计划</div><div class="item">金融监管总局完善科技金融服务体系政策</div></div><div class="section"><h3>三、地方政策</h3><div class="item">北京、上海、广东同步发布数据条例配套细则</div><div class="item">多地出台新能源汽车产业支持新政</div></div></div></body></html>`
+        };
+
+        // 获取报告
+        function getReports() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [defaultReport];
+        }
+
+        // 渲染标签
+        function renderTopics() {
+            const reports = getReports();
+            const topics = new Set();
+            reports.forEach(r => topics.add(r.topic));
+
+            const container = document.getElementById('topicTags');
+            container.innerHTML = `<button data-topic="all" class="badge bg-gray-100 hover:bg-primary/10 topic-tag">全部标签</button>`;
+
+            Array.from(topics).forEach(t => {
+                container.innerHTML += `<button data-topic="${t}" class="badge bg-gray-100 hover:bg-primary/10 topic-tag">${t}</button>`;
+            });
+
+            // 绑定标签事件
+            document.querySelectorAll('.topic-tag').forEach(el => {
+                el.onclick = () => {
+                    document.querySelectorAll('.topic-tag').forEach(i => i.classList.remove('bg-primary', 'text-white'));
+                    el.classList.add('bg-primary', 'text-white');
+                    currentTopic = el.dataset.topic;
+                    renderList();
+                }
+            });
+        }
+
+        // 渲染列表
+        function renderList() {
+            const list = document.getElementById('articleList');
+            const empty = document.getElementById('emptyState');
+            let reports = getReports().sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+            // 筛选
+            if (currentType !== 'all') reports = reports.filter(i => i.type === currentType);
+            if (currentTopic !== 'all') reports = reports.filter(i => i.topic === currentTopic);
+
+            // 搜索
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            if (keyword) reports = reports.filter(i => i.title.toLowerCase().includes(keyword) || i.topic.toLowerCase().includes(keyword));
+
+            // 显示空状态
+            if (reports.length === 0) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+
+            list.innerHTML = reports.map(i => `
+        <div class="article-card p-6">
+          <div class="flex justify-between items-start mb-4">
+            <span class="${i.type === 'day' ? 'bg-green-100 text-green-700' : i.type === 'week' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'} badge">${i.typeText}</span>
+            <span class="text-sm text-gray-400">${i.createTime}</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-3 line-clamp-2">${i.title}</h3>
+          <div class="text-sm text-gray-500 mb-5 flex items-center gap-2">
+            <i class="fa fa-tag"></i>
+            <span>${i.topic}</span>
+          </div>
+          <button onclick="read('${i.id}')" class="text-primary font-medium flex items-center gap-1 text-sm hover:underline">
+            阅读全文 <i class="fa fa-arrow-right"></i>
+          </button>
+        </div>
+      `).join('');
+        }
+
+        // 阅读
+        window.read = (id) => {
+            const r = getReports().find(i => i.id === id);
+            document.getElementById('modalTitle').innerText = r.title;
+            document.getElementById('readFrame').srcdoc = r.htmlContent;
+            document.getElementById('readModal').style.display = 'block';
+        }
+
+        // 初始化
+        document.getElementById('closeModal').onclick = () => {
+            document.getElementById('readModal').style.display = 'none';
+        }
+
+        document.querySelectorAll('[data-type]').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('[data-type]').forEach(i => i.classList.remove('bg-primary', 'text-white'));
+                el.classList.add('bg-primary', 'text-white');
+                currentType = el.dataset.type;
+                renderList();
+            }
+        });
+
+        document.getElementById('searchInput').oninput = renderList;
+        window.onload = () => {
+            renderTopics();
+            renderList();
+        }
+    </script>
+    <style>
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease forwards;
+        }
+    </style>
+</body>
+
+</html>
