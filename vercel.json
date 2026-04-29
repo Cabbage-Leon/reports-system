@@ -1,8 +1,9 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npx prisma generate && npx prisma db push && npm run build",
+  "buildCommand": "PRISMA_SCHEMA_PATH=prisma/schema.prod.prisma npx prisma generate && PRISMA_SCHEMA_PATH=prisma/schema.prod.prisma npx prisma db push && npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "regions": ["iad1"]
-  
+  "regions": [
+    "iad1"
+  ]
 }
