@@ -23,11 +23,11 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 在 Vercel Dashboard → Project Settings → Environment Variables 中配置：
 
-| 变量名 | 值 | 说明 |
-|--------|-----|------|
-| `DATABASE_URL` | `postgresql://...` | Vercel Postgres 连接字符串 |
-| `NEXTAUTH_URL` | `https://your-app.vercel.app` | 你的 Vercel 应用 URL |
-| `NEXTAUTH_SECRET` | `openssl rand -base64 32` | 随机密钥（生产专用） |
+| 变量名               | 值                             | 说明                    |
+| ----------------- | ----------------------------- | --------------------- |
+| `DATABASE_URL`    | `postgresql://...`            | Vercel Postgres 连接字符串 |
+| `NEXTAUTH_URL`    | `https://your-app.vercel.app` | 你的 Vercel 应用 URL      |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32`     | 随机密钥（生产专用）            |
 
 ## 部署步骤
 
@@ -55,7 +55,7 @@ NEXTAUTH_SECRET = 生成的新密钥
 NEXT_PUBLIC_APP_URL = https://your-app.vercel.app
 ```
 
-5. 点击 "Deploy"
+1. 点击 "Deploy"
 
 ### 3. 创建数据库表
 
@@ -74,7 +74,7 @@ vercel run npx tsx scripts/init-user.ts
 # 方法 2: 访问 /admin 页面自动重定向到登录
 ```
 
-## NEXTAUTH_SECRET 生成方法
+## NEXTAUTH\_SECRET 生成方法
 
 ```bash
 # Linux / macOS / Git Bash
@@ -89,19 +89,24 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ## 常见问题
 
-### 1. DATABASE_URL 格式错误
+### 1. DATABASE\_URL 格式错误
+
 确保 PostgreSQL 连接字符串包含 `?sslmode=require`
 
 正确格式：
+
 ```
 postgresql://user:password@host:5432/database?sslmode=require
 ```
 
-### 2. NEXTAUTH_URL 不匹配
+### 2. NEXTAUTH\_URL 不匹配
+
 生产环境的 `NEXTAUTH_URL` 必须与实际访问的 URL 完全一致
 
 ### 3. 构建失败
+
 检查 Vercel Build Log，确保 Prisma 生成成功：
+
 ```
 npx prisma generate && next build
 ```
@@ -124,3 +129,4 @@ vercel env pull .env.local
 # 运行开发服务器
 npm run dev
 ```
+
