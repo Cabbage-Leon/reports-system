@@ -79,6 +79,12 @@ export default function AdminPage() {
     }
   }, [status, router])
 
+  const refreshData = async () => {
+    await fetchReports()
+    await fetchTopics()
+    await fetchStats()
+  }
+
   const fetchReports = async () => {
     const params = new URLSearchParams()
     if (activeType !== 'all') params.set('type', activeType)
@@ -269,12 +275,8 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    const refresh = async () => {
-      await fetchReports()
-      await fetchTopics()
-      await fetchStats()
-    }
-    refresh()
+    refreshData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, activeTopic, keyword])
 
   const openUploadModal = () => {
