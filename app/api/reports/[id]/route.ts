@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const content = readFile(report.filePath)
+    const content = await readFile(report.filePath)
     return NextResponse.json({ ...report, content })
   } catch {
     return NextResponse.json(report)
@@ -64,7 +64,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     return NextResponse.json({ error: 'Report not found' }, { status: 404 })
   }
 
-  deleteFile(report.filePath)
+  await deleteFile(report.filePath)
 
   await prisma.report.delete({
     where: { id },
