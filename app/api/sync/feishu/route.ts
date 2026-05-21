@@ -11,9 +11,31 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { action, configId } = body;
+  const { action, configId, ...configData } = body;
 
   try {
+    if (action === 'create') {
+      const { appId, appSecret, folderToken, syncTime, reportType, topic, enabled } = configData;
+
+      if (!appId || !appSecret) {
+        return NextResponse.json({ error: 'appId and appSecret are required' }, { status: 400 });
+      }
+
+      const config = await prisma.feishuSyncConfig.create({
+        data: {
+          appId,
+          appSecret,
+          folderToken: folderToken || null,
+          syncTime: syncTime || '09:00',
+          reportType: reportType || 'day',
+          topic: topic || '飞书同步',
+          enabled: enabled !== undefined ? enabled : true,
+        },
+      });
+
+      return NextResponse.json(config, { status: 201 });
+    }
+
     if (action === 'sync') {
       if (!configId) {
         return NextResponse.json({ error: 'configId is required' }, { status: 400 });

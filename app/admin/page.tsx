@@ -16,6 +16,14 @@ import {
   FileText,
   Layers,
   UploadCloud,
+  RefreshCw,
+  Clock,
+  ToggleLeft,
+  ToggleRight,
+  Settings,
+  CheckCircle,
+  XCircle,
+  Loader2,
 } from 'lucide-react'
 
 interface Report {
@@ -28,6 +36,20 @@ interface Report {
   createTime: string
   updateTime: string
   content?: string
+}
+
+interface FeishuSyncConfig {
+  id: string
+  enabled: boolean
+  appId: string
+  appSecret: string
+  folderToken: string | null
+  syncTime: string
+  reportType: string
+  topic: string
+  createdAt: string
+  updatedAt: string
+  lastSyncTime: string | null
 }
 
 interface Stats {
@@ -58,6 +80,23 @@ export default function AdminPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isReadModalOpen, setIsReadModalOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [currentView, setCurrentView] = useState<'reports' | 'sync'>('reports')
+
+  const [feishuConfigs, setFeishuConfigs] = useState<FeishuSyncConfig[]>([])
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false)
+  const [editingConfig, setEditingConfig] = useState<FeishuSyncConfig | null>(null)
+  const [syncLoading, setSyncLoading] = useState<string | null>(null)
+  const [syncResult, setSyncResult] = useState<{ success: number; failed: number; errors: string[] } | null>(null)
+
+  const [syncForm, setSyncForm] = useState({
+    appId: '',
+    appSecret: '',
+    folderToken: '',
+    syncTime: '09:00',
+    reportType: 'day',
+    topic: '飞书同步',
+    enabled: true,
+  })
 
   const [uploadForm, setUploadForm] = useState({
     title: '',
@@ -106,6 +145,137 @@ export default function AdminPage() {
     const res = await fetch('/api/stats')
     const data = await res.json()
     setStats(data)
+  }
+
+  const fetchFeishuConfigs = async () => {
+    const res = await fetch('/api/sync/feishu')
+    if (res.ok) {
+      const data = await res.json()
+      setFeishuConfigs(data)
+    }
+  }
+
+  const handleCreateConfig = async () => {
+    if (!syncForm.appId || !syncForm.appSecret) {
+      alert('请填写 App ID 和 App Secret')
+      return
+    }
+
+    const res = await fetch('/api/sync/feishu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'create', ...syncForm }),
+    })
+
+    if (res.ok) {
+      setIsSyncModalOpen(false)
+      setEditingConfig(null)
+      setSyncForm({
+        appId: '',
+        appSecret: '',
+        folderToken: '',
+        syncTime: '09:00',
+        reportType: 'day',
+        topic: '飞书同步',
+        enabled: true,
+      })
+      fetchFeishuConfigs()
+    } else {
+      const data = await res.json()
+      alert(data.error || '创建失败')
+    }
+  }
+
+  const handleUpdateConfig = async (id: string) => {
+    const res = await fetch('/api/sync/feishu', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...syncForm }),
+    })
+
+    if (res.ok) {
+      setIsSyncModalOpen(false)
+      setEditingConfig(null)
+      setSyncForm({
+        appId: '',
+        appSecret: '',
+        folderToken: '',
+        syncTime: '09:00',
+        reportType: 'day',
+        topic: '飞书同步',
+        enabled: true,
+      })
+      fetchFeishuConfigs()
+    } else {
+      alert('更新失败')
+    }
+  }
+
+  const handleDeleteConfig = async (id: string) => {
+    if (!confirm('确定删除该配置？')) return
+
+    const res = await fetch(`/api/sync/feishu?id=${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      fetchFeishuConfigs()
+    } else {
+      alert('删除失败')
+    }
+  }
+
+  const handleToggleConfig = async (config: FeishuSyncConfig) => {
+    const res = await fetch('/api/sync/feishu', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: config.id, enabled: !config.enabled }),
+    })
+
+    if (res.ok) {
+      fetchFeishuConfigs()
+    }
+  }
+
+  const handleTestSync = async (configId: string) => {
+    setSyncLoading(configId)
+    setSyncResult(null)
+
+    const res = await fetch('/api/sync/feishu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync', configId }),
+    })
+
+    const data = await res.json()
+    setSyncResult(data)
+    setSyncLoading(null)
+    fetchFeishuConfigs()
+  }
+
+  const openEditConfigModal = (config: FeishuSyncConfig) => {
+    setEditingConfig(config)
+    setSyncForm({
+      appId: config.appId,
+      appSecret: config.appSecret,
+      folderToken: config.folderToken || '',
+      syncTime: config.syncTime,
+      reportType: config.reportType,
+      topic: config.topic,
+      enabled: config.enabled,
+    })
+    setIsSyncModalOpen(true)
+  }
+
+  const openCreateConfigModal = () => {
+    setEditingConfig(null)
+    setSyncForm({
+      appId: '',
+      appSecret: '',
+      folderToken: '',
+      syncTime: '09:00',
+      reportType: 'day',
+      topic: '飞书同步',
+      enabled: true,
+    })
+    setIsSyncModalOpen(true)
   }
 
   const parseHTMLContent = (html: string) => {
@@ -276,8 +446,17 @@ export default function AdminPage() {
 
   useEffect(() => {
     refreshData()
+    if (currentView === 'sync') {
+      fetchFeishuConfigs()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, activeTopic, keyword])
+
+  useEffect(() => {
+    if (currentView === 'sync') {
+      fetchFeishuConfigs()
+    }
+  }, [currentView])
 
   const openUploadModal = () => {
     setUploadForm({
@@ -363,7 +542,44 @@ export default function AdminPage() {
                   <X className="w-4 h-4 text-stone-500" />
                 </button>
               </div>
-              
+
+              <div>
+                <p className="text-label px-2 mb-2">功能菜单</p>
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => {
+                      setCurrentView('reports')
+                      setSidebarOpen(false)
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      currentView === 'reports'
+                        ? 'bg-stone-100 text-stone-900'
+                        : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    报告管理
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentView('sync')
+                      setSidebarOpen(false)
+                      fetchFeishuConfigs()
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      currentView === 'sync'
+                        ? 'bg-stone-100 text-stone-900'
+                        : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
+                    }`}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    飞书同步
+                  </button>
+                </div>
+              </div>
+
+              {currentView === 'reports' && (
+              <>
               <div>
                 <p className="text-label px-2 mb-2">报告类型</p>
                 <div className="space-y-0.5">
@@ -450,6 +666,8 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
+              </>
+              )}
 
               <div className="pt-4 border-t border-stone-100">
                 <div className="flex items-center gap-2.5 px-2 py-2">
@@ -467,6 +685,7 @@ export default function AdminPage() {
         </aside>
 
         <main className={`flex-1 min-h-[calc(100vh-56px)] transition-all duration-300 ${sidebarOpen ? 'lg:ml-0' : ''}`}>
+          {currentView === 'reports' ? (
           <div className="p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="flex-1 relative">
@@ -552,6 +771,150 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+          ) : (
+          <div className="p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" />
+                飞书文档同步配置
+              </h2>
+              <button
+                onClick={openCreateConfigModal}
+                className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 text-sm ml-auto"
+              >
+                <Plus className="w-4 h-4" />
+                添加配置
+              </button>
+            </div>
+
+            {syncResult && (
+              <div className={`mb-4 p-4 rounded-lg border ${
+                syncResult.failed === 0 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {syncResult.failed === 0 ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-red-600" />
+                  )}
+                  <span className={`font-medium ${
+                    syncResult.failed === 0 ? 'text-green-800' : 'text-red-800'
+                  }`}>
+                    同步完成：成功 {syncResult.success}，失败 {syncResult.failed}
+                  </span>
+                </div>
+                {syncResult.errors.length > 0 && (
+                  <ul className="text-sm text-red-700 list-disc list-inside">
+                    {syncResult.errors.map((error, idx) => (
+                      <li key={idx}>{error}</li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  onClick={() => setSyncResult(null)}
+                  className="mt-2 text-xs text-stone-500 hover:text-stone-700"
+                >
+                  关闭
+                </button>
+              </div>
+            )}
+
+            {feishuConfigs.length === 0 ? (
+              <div className="bg-white rounded-xl border border-stone-200 p-12 text-center">
+                <div className="w-10 h-10 bg-stone-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Settings className="w-5 h-5 text-stone-400" />
+                </div>
+                <p className="text-stone-600 font-medium text-sm">暂无同步配置</p>
+                <p className="text-stone-400 text-xs mt-1">点击上方按钮添加第一个飞书同步配置</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {feishuConfigs.map((config) => (
+                  <div
+                    key={config.id}
+                    className="bg-white rounded-xl border border-stone-200 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-xs font-medium px-2 py-1 rounded ${
+                            config.enabled 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-stone-100 text-stone-600'
+                          }`}>
+                            {config.enabled ? '已启用' : '已禁用'}
+                          </span>
+                          <span className="text-xs text-stone-400">
+                            {config.reportType === 'day' ? '日报' : config.reportType === 'week' ? '周报' : '月报'}
+                          </span>
+                        </div>
+                        <p className="font-medium text-stone-800 text-sm mb-1">
+                          App ID: <span className="font-mono">{config.appId}</span>
+                        </p>
+                        <p className="text-xs text-stone-500 mb-2">
+                          主题: {config.topic}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-stone-400">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            同步时间: {config.syncTime}
+                          </span>
+                          {config.lastSyncTime && (
+                            <span className="flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3 text-green-500" />
+                              上次同步: {new Date(config.lastSyncTime).toLocaleString('zh-CN')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleConfig(config)}
+                          className={`btn-ghost p-2 ${config.enabled ? 'text-green-600' : 'text-stone-400'}`}
+                          title={config.enabled ? '禁用' : '启用'}
+                        >
+                          {config.enabled ? (
+                            <ToggleRight className="w-5 h-5" />
+                          ) : (
+                            <ToggleLeft className="w-5 h-5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleTestSync(config.id)}
+                          disabled={syncLoading === config.id || !config.enabled}
+                          className="btn-ghost p-2 disabled:opacity-50"
+                          title="测试同步"
+                        >
+                          {syncLoading === config.id ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-5 h-5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openEditConfigModal(config)}
+                          className="btn-ghost p-2"
+                          title="编辑"
+                        >
+                          <Settings className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConfig(config.id)}
+                          className="btn-ghost p-2 text-red-500 hover:bg-red-50"
+                          title="删除"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          )}
         </main>
       </div>
 
@@ -770,6 +1133,113 @@ export default function AdminPage() {
                 title={selectedReport.title}
                 sandbox="allow-scripts allow-same-origin"
               />
+            </div>
+          </div>
+        </>
+      )}
+
+      {isSyncModalOpen && (
+        <>
+          <div className="modal-backdrop" onClick={() => setIsSyncModalOpen(false)} />
+          <div className="modal-content animate-slide-up max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-stone-100 flex-shrink-0">
+              <h3 className="font-semibold text-stone-900 text-sm">
+                {editingConfig ? '编辑同步配置' : '添加同步配置'}
+              </h3>
+              <button onClick={() => setIsSyncModalOpen(false)} className="btn-ghost p-1.5">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">
+                  App ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={syncForm.appId}
+                  onChange={(e) => setSyncForm({ ...syncForm, appId: e.target.value })}
+                  placeholder="飞书应用的 App ID"
+                  className="input-field text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">
+                  App Secret <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={syncForm.appSecret}
+                  onChange={(e) => setSyncForm({ ...syncForm, appSecret: e.target.value })}
+                  placeholder="飞书应用的 App Secret"
+                  className="input-field text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">
+                  文件夹 Token（可选）
+                </label>
+                <input
+                  type="text"
+                  value={syncForm.folderToken}
+                  onChange={(e) => setSyncForm({ ...syncForm, folderToken: e.target.value })}
+                  placeholder="飞书文件夹 Token，不填则同步根目录"
+                  className="input-field text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-stone-700 mb-1.5">同步时间</label>
+                  <input
+                    type="time"
+                    value={syncForm.syncTime}
+                    onChange={(e) => setSyncForm({ ...syncForm, syncTime: e.target.value })}
+                    className="input-field text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-700 mb-1.5">报告类型</label>
+                  <select
+                    value={syncForm.reportType}
+                    onChange={(e) => setSyncForm({ ...syncForm, reportType: e.target.value })}
+                    className="input-field text-sm"
+                  >
+                    <option value="day">日报</option>
+                    <option value="week">周报</option>
+                    <option value="month">月报</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">主题分类</label>
+                <input
+                  type="text"
+                  value={syncForm.topic}
+                  onChange={(e) => setSyncForm({ ...syncForm, topic: e.target.value })}
+                  placeholder="同步文档的主题标签"
+                  className="input-field text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSyncForm({ ...syncForm, enabled: !syncForm.enabled })}
+                  className="flex items-center gap-2 text-sm text-stone-600"
+                >
+                  {syncForm.enabled ? (
+                    <ToggleRight className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <ToggleLeft className="w-5 h-5 text-stone-400" />
+                  )}
+                  <span>启用自动同步</span>
+                </button>
+              </div>
+              <button
+                onClick={() => editingConfig ? handleUpdateConfig(editingConfig.id) : handleCreateConfig()}
+                className="btn-primary w-full text-sm flex-shrink-0"
+              >
+                {editingConfig ? '保存修改' : '创建配置'}
+              </button>
             </div>
           </div>
         </>
