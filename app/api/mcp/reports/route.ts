@@ -26,28 +26,29 @@ export async function POST(request: Request) {
     const { method, params, id } = body;
 
     let result: unknown;
+    const typedParams = params as unknown;
 
     switch (method) {
       case 'reports/list':
-        result = await listReports(params as ListReportsParams);
+        result = await listReports(typedParams as ListReportsParams);
         break;
       case 'reports/get':
-        result = await getReport(params as GetReportParams);
+        result = await getReport(typedParams as GetReportParams);
         break;
       case 'reports/create':
-        result = await createReport(params as CreateReportParams);
+        result = await createReport(typedParams as CreateReportParams);
         break;
       case 'reports/update':
-        result = await updateReport(params as UpdateReportParams);
+        result = await updateReport(typedParams as UpdateReportParams);
         break;
       case 'reports/delete':
-        result = await deleteReport(params as DeleteReportParams);
+        result = await deleteReport(typedParams as DeleteReportParams);
         break;
       case 'reports/read_content':
-        result = await readReportContent(params as ReadReportContentParams);
+        result = await readReportContent(typedParams as ReadReportContentParams);
         break;
       case 'reports/search':
-        result = await searchReports(params as SearchReportsParams);
+        result = await searchReports(typedParams as SearchReportsParams);
         break;
       default:
         return NextResponse.json(
