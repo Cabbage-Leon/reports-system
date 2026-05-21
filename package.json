@@ -16,6 +16,7 @@
     "@prisma/client": "^5.22.0",
     "@vercel/blob": "^2.4.0",
     "bcryptjs": "^2.4.3",
+    "framer-motion": "^12.39.0",
     "lucide-react": "^0.263.0",
     "next": "^14.0.0",
     "next-auth": "^4.24.5",
