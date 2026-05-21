@@ -30,15 +30,6 @@ export default function Home() {
   const [isReading, setIsReading] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchReports()
-    fetchTopics()
-  }, [])
-
-  useEffect(() => {
-    fetchReports()
-  }, [activeType, activeTopic, keyword])
-
   const fetchReports = async () => {
     setLoading(true)
     const params = new URLSearchParams()
@@ -58,6 +49,15 @@ export default function Home() {
     setTopics(data)
   }
 
+  useEffect(() => {
+    fetchReports()
+    fetchTopics()
+  }, [])
+
+  useEffect(() => {
+    fetchReports()
+  }, [activeType, activeTopic, keyword])
+
   const handleRead = async (id: string) => {
     const res = await fetch(`/api/reports/${id}`)
     const data = await res.json()
@@ -73,47 +73,47 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-semibold">档</span>
+            <div className="w-7 h-7 bg-stone-900 rounded-md flex items-center justify-center">
+              <span className="text-white text-xs font-semibold">档</span>
             </div>
-            <span className="font-medium text-stone-800">报告归档</span>
+            <span className="font-medium text-stone-800 text-sm">报告归档</span>
           </div>
           <nav className="flex items-center gap-1">
-            <a href="/admin" className="btn-ghost">
+            <a href="/admin" className="btn-ghost text-xs">
               管理
             </a>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-16">
-        <section className="mb-16 animate-in">
-          <h1 className="text-display text-4xl text-stone-900 mb-4">
+      <main className="max-w-3xl mx-auto px-6 py-10">
+        <section className="mb-12 animate-in">
+          <h1 className="text-display text-3xl text-stone-900 mb-3">
             工作报告
           </h1>
-          <p className="text-stone-500 text-lg mb-8 max-w-xl">
+          <p className="text-stone-500 text-sm mb-6 max-w-xl">
             整理和回顾您的工作日报、周报和月报
           </p>
           
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="搜索报告..."
-              className="input-field pl-12"
+              className="input-field pl-10 text-sm"
             />
           </div>
         </section>
 
-        <section className="mb-8">
+        <section className="mb-6">
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveType('all')}
-              className={`type-pill ${activeType === 'all' ? 'type-pill-active' : 'type-pill-inactive'}`}
+              className={`type-pill text-xs ${activeType === 'all' ? 'type-pill-active' : 'type-pill-inactive'}`}
             >
               全部
             </button>
@@ -121,7 +121,7 @@ export default function Home() {
               <button
                 key={value}
                 onClick={() => setActiveType(value)}
-                className={`type-pill ${activeType === value ? 'type-pill-active' : 'type-pill-inactive'}`}
+                className={`type-pill text-xs ${activeType === value ? 'type-pill-active' : 'type-pill-inactive'}`}
               >
                 {label}
               </button>
@@ -129,11 +129,11 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mb-8">
-          <div className="flex items-center gap-2 flex-wrap">
+        <section className="mb-10">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <button
               onClick={() => setActiveTopic('all')}
-              className={`type-pill text-xs ${activeTopic === 'all' ? 'type-pill-active' : 'type-pill-inactive'}`}
+              className={`type-pill text-xs px-3 py-1.5 ${activeTopic === 'all' ? 'type-pill-active' : 'type-pill-inactive'}`}
             >
               全部主题
             </button>
@@ -141,7 +141,7 @@ export default function Home() {
               <button
                 key={topic}
                 onClick={() => setActiveTopic(topic)}
-                className={`type-pill text-xs ${activeTopic === topic ? 'type-pill-active' : 'type-pill-inactive'}`}
+                className={`type-pill text-xs px-3 py-1.5 ${activeTopic === topic ? 'type-pill-active' : 'type-pill-inactive'}`}
               >
                 {topic}
               </button>
@@ -149,47 +149,47 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mt-12">
+        <section>
           {loading ? (
             <div className="py-16 text-center">
-              <div className="w-6 h-6 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin mx-auto"></div>
+              <div className="w-5 h-5 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin mx-auto"></div>
             </div>
           ) : reports.length === 0 ? (
             <div className="py-20 text-center">
               <div className="text-stone-300 mb-4">
-                <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-10 h-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <p className="text-stone-500">暂无匹配的报告</p>
+              <p className="text-stone-500 text-sm">暂无匹配的报告</p>
             </div>
           ) : (
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-stone-100 -mx-6">
               {reports.map((report, index) => (
                 <div
                   key={report.id}
                   onClick={() => handleRead(report.id)}
-                  className="report-item group opacity-0 animate-in"
-                  style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'forwards' }}
+                  className="report-item group opacity-0 animate-in px-6"
+                  style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'forwards' }}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3 py-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-600">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
                           {typeLabels[report.type as keyof typeof typeLabels]}
                         </span>
-                        <span className="text-xs text-stone-400 flex items-center gap-1">
-                          <Tag className="w-3 h-3" />
+                        <span className="text-[11px] text-stone-400 flex items-center gap-1">
+                          <Tag className="w-2.5 h-2.5" />
                           {report.topic}
                         </span>
                       </div>
-                      <h3 className="report-title group-hover:text-stone-900">{report.title}</h3>
-                      <p className="report-meta flex items-center gap-1 mt-1">
-                        <Calendar className="w-3 h-3" />
+                      <h3 className="report-title group-hover:text-stone-900 text-base">{report.title}</h3>
+                      <p className="report-meta flex items-center gap-1 mt-1 text-xs">
+                        <Calendar className="w-2.5 h-2.5" />
                         {report.createTime.split('T')[0]}
                       </p>
                     </div>
-                    <ArrowRight className="report-arrow group-hover:opacity-100 group-hover:translate-x-0 w-5 h-5 flex-shrink-0 mt-1" />
+                    <ArrowRight className="report-arrow group-hover:opacity-100 group-hover:translate-x-0 w-4 h-4 flex-shrink-0 mt-1" />
                   </div>
                 </div>
               ))}
@@ -201,28 +201,28 @@ export default function Home() {
       {selectedReport && (
         <>
           <div 
-            className={`fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-50 transition-opacity duration-300 ${isReading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-50 transition-opacity duration-300 ${isReading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             onClick={closeModal}
           />
-          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden z-50 transition-all duration-300 ${isReading ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
-              <div>
-                <h2 className="font-medium text-stone-900">{selectedReport.title}</h2>
-                <p className="text-xs text-stone-500 mt-0.5">
+          <div className={`fixed inset-0 z-50 flex flex-col bg-white transition-all duration-300 ${isReading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+              <div className="flex-1 min-w-0">
+                <h2 className="font-medium text-stone-900 text-sm truncate">{selectedReport.title}</h2>
+                <p className="text-[11px] text-stone-500 mt-0.5">
                   {typeLabels[selectedReport.type as keyof typeof typeLabels]} · {selectedReport.topic}
                 </p>
               </div>
               <button
                 onClick={closeModal}
-                className="btn-ghost p-2"
+                className="btn-ghost p-2 ml-2"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="h-[calc(85vh-73px)] overflow-auto">
+            <div className="flex-1 overflow-hidden">
               <iframe
                 srcDoc={selectedReport.content}
-                className="w-full h-full min-h-[500px] border-none bg-white"
+                className="w-full h-full border-none bg-white"
                 title={selectedReport.title}
               />
             </div>

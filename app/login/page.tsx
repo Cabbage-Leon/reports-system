@@ -33,49 +33,49 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-stone-100">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-stone-50">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8 animate-in">
-          <div className="w-12 h-12 bg-stone-900 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-lg font-semibold">档</span>
+        <div className="text-center mb-7 animate-in">
+          <div className="w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center mx-auto mb-3">
+            <span className="text-white text-base font-semibold">档</span>
           </div>
-          <h1 className="text-xl font-semibold text-stone-900">报告管理</h1>
-          <p className="text-stone-500 text-sm mt-1">请登录以继续</p>
+          <h1 className="text-base font-semibold text-stone-900">报告管理</h1>
+          <p className="text-stone-500 text-xs mt-1">请登录以继续</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm animate-in stagger-2">
+        <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-sm animate-in stagger-2">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+            <div className="mb-4 p-2.5 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">邮箱</label>
+              <label className="block text-xs font-medium text-stone-700 mb-1.5">邮箱</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-3.5 h-3.5" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@example.com"
-                  className="input-field pl-10"
+                  className="input-field pl-9 text-sm"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">密码</label>
+              <label className="block text-xs font-medium text-stone-700 mb-1.5">密码</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-3.5 h-3.5" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="input-field pl-10"
+                  className="input-field pl-9 text-sm"
                   required
                 />
               </div>
@@ -84,24 +84,24 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-2 text-sm"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                   登录中...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   登录
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </span>
               )}
             </button>
           </form>
         </div>
 
-        <p className="text-xs text-stone-400 text-center mt-4 animate-in stagger-3">
+        <p className="text-[10px] text-stone-400 text-center mt-3 animate-in stagger-3">
           默认账号: admin@example.com / password
         </p>
       </div>

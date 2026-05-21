@@ -15,6 +15,7 @@ import {
   Menu,
   FileText,
   Layers,
+  UploadCloud,
 } from 'lucide-react'
 
 interface Report {
@@ -56,6 +57,7 @@ export default function AdminPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isReadModalOpen, setIsReadModalOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const [uploadForm, setUploadForm] = useState({
     title: '',
@@ -76,16 +78,6 @@ export default function AdminPage() {
       router.push('/login')
     }
   }, [status, router])
-
-  useEffect(() => {
-    refreshData()
-  }, [activeType, activeTopic, keyword])
-
-  const refreshData = async () => {
-    await fetchReports()
-    await fetchTopics()
-    await fetchStats()
-  }
 
   const fetchReports = async () => {
     const params = new URLSearchParams()
@@ -108,6 +100,91 @@ export default function AdminPage() {
     const res = await fetch('/api/stats')
     const data = await res.json()
     setStats(data)
+  }
+
+  const parseHTMLContent = (html: string) => {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    
+    let title = ''
+    const h1Title = doc.querySelector('h1')?.textContent?.trim()
+    const titleTag = doc.querySelector('title')?.textContent?.trim()
+    if (h1Title) title = h1Title
+    else if (titleTag) title = titleTag
+
+    const text = doc.body.textContent || ''
+    let inferredType = 'week'
+    if (text.includes('日报') || text.includes('每日') || /(日|day)/i.test(title)) {
+      inferredType = 'day'
+    } else if (text.includes('月报') || text.includes('月度') || /(月|month)/i.test(title)) {
+      inferredType = 'month'
+    }
+
+    let inferredTopic = ''
+    const topicMatch = text.match(/主题[：:]\s*(.+?)(?:\n|$)/)
+    if (topicMatch) {
+      inferredTopic = topicMatch[1].trim()
+    } else if (topics.length > 0) {
+      for (const t of topics) {
+        if (text.includes(t)) {
+          inferredTopic = t
+          break
+        }
+      }
+    }
+
+    return { title, type: inferredType, topic: inferredTopic }
+  }
+
+  const handleFileSelect = async (file: File | null) => {
+    if (!file) {
+      setUploadForm({ ...uploadForm, file: null })
+      return
+    }
+
+    let autoTitle = file.name.replace(/\.html$/i, '')
+    let autoType = 'week'
+    let autoTopic = ''
+
+    try {
+      const content = await file.text()
+      const parsed = parseHTMLContent(content)
+      autoTitle = parsed.title || autoTitle
+      autoType = parsed.type
+      autoTopic = parsed.topic
+    } catch (e) {
+      console.error('Failed to parse HTML file:', e)
+    }
+
+    if (!autoTopic && topics.length > 0) {
+      autoTopic = topics[0]
+    }
+
+    setUploadForm({
+      title: autoTitle,
+      type: autoType,
+      topic: autoTopic,
+      file: file,
+    })
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    
+    const file = e.dataTransfer.files?.[0] || null
+    if (file?.name.endsWith('.html')) {
+      await handleFileSelect(file)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragging(false)
   }
 
   const handleUpload = async () => {
@@ -191,10 +268,29 @@ export default function AdminPage() {
     setIsEditModalOpen(true)
   }
 
+  useEffect(() => {
+    const refresh = async () => {
+      await fetchReports()
+      await fetchTopics()
+      await fetchStats()
+    }
+    refresh()
+  }, [activeType, activeTopic, keyword])
+
+  const openUploadModal = () => {
+    setUploadForm({
+      title: '',
+      type: 'week',
+      topic: topics.length > 0 ? topics[0] : '',
+      file: null,
+    })
+    setIsUploadModalOpen(true)
+  }
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin"></div>
+        <div className="w-5 h-5 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -212,25 +308,25 @@ export default function AdminPage() {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden p-2 hover:bg-stone-100 rounded-lg transition-colors"
             >
-              <Menu className="w-5 h-5 text-stone-600" />
+              <Menu className="w-4 h-4 text-stone-600" />
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">档</span>
+              <div className="w-7 h-7 bg-stone-900 rounded-md flex items-center justify-center">
+                <span className="text-white text-xs font-semibold">档</span>
               </div>
-              <span className="font-medium text-stone-800 hidden sm:block">管理后台</span>
+              <span className="font-medium text-stone-800 text-sm hidden sm:block">管理后台</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a href="/" className="btn-secondary text-sm hidden sm:flex items-center gap-2">
-              <FileText className="w-4 h-4" />
+            <a href="/" className="btn-secondary text-xs hidden sm:flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" />
               访问首页
             </a>
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
-              className="btn-ghost text-sm flex items-center gap-2"
+              className="btn-ghost text-xs flex items-center gap-1.5"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">退出</span>
             </button>
           </div>
@@ -238,11 +334,11 @@ export default function AdminPage() {
       </header>
 
       <div className="flex">
-        <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} lg:w-64 fixed lg:sticky top-14 h-[calc(100vh-56px)] overflow-hidden transition-all duration-300 z-30`}>
+        <aside className={`${sidebarOpen ? 'w-60' : 'w-0'} lg:w-60 fixed lg:sticky top-14 h-[calc(100vh-56px)] overflow-hidden transition-all duration-300 z-30`}>
           <div className="h-full bg-white border-r border-stone-200 overflow-y-auto">
             <div className="p-4 space-y-6">
               <div>
-                <p className="text-label px-3 mb-2">报告类型</p>
+                <p className="text-label px-2 mb-2">报告类型</p>
                 <div className="space-y-0.5">
                   {[
                     { value: 'all', label: '全部', icon: Layers },
@@ -253,13 +349,13 @@ export default function AdminPage() {
                     <button
                       key={item.value}
                       onClick={() => setActiveType(item.value)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                         activeType === item.value
                           ? 'bg-stone-100 text-stone-900'
                           : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
                       }`}
                     >
-                      <item.icon className="w-4 h-4" />
+                      <item.icon className="w-3.5 h-3.5" />
                       {item.label}
                     </button>
                   ))}
@@ -267,30 +363,30 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <p className="text-label px-3 mb-2">主题分类</p>
+                <p className="text-label px-2 mb-2">主题分类</p>
                 <div className="space-y-0.5">
                   <button
                     onClick={() => setActiveTopic('all')}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                       activeTopic === 'all'
                         ? 'bg-stone-100 text-stone-900'
                         : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
                     }`}
                   >
-                    <Layers className="w-4 h-4" />
+                    <Layers className="w-3.5 h-3.5" />
                     全部分类
                   </button>
                   {topics.map((topic) => (
                     <button
                       key={topic}
                       onClick={() => setActiveTopic(topic)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                         activeTopic === topic
                           ? 'bg-stone-100 text-stone-900'
                           : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
                       }`}
                     >
-                      <Layers className="w-4 h-4" />
+                      <Layers className="w-3.5 h-3.5" />
                       {topic}
                     </button>
                   ))}
@@ -298,35 +394,35 @@ export default function AdminPage() {
               </div>
 
               <div className="pt-4 border-t border-stone-100">
-                <p className="text-label px-3 mb-3">数据统计</p>
+                <p className="text-label px-2 mb-3">数据统计</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="stat-card text-center">
-                    <div className="stat-number">{stats.total}</div>
+                  <div className="stat-card text-center p-3">
+                    <div className="stat-number text-lg">{stats.total}</div>
                     <div className="stat-label">总计</div>
                   </div>
-                  <div className="stat-card text-center">
-                    <div className="stat-number">{stats.day}</div>
+                  <div className="stat-card text-center p-3">
+                    <div className="stat-number text-lg">{stats.day}</div>
                     <div className="stat-label">日报</div>
                   </div>
-                  <div className="stat-card text-center">
-                    <div className="stat-number">{stats.week}</div>
+                  <div className="stat-card text-center p-3">
+                    <div className="stat-number text-lg">{stats.week}</div>
                     <div className="stat-label">周报</div>
                   </div>
-                  <div className="stat-card text-center">
-                    <div className="stat-number">{stats.month}</div>
+                  <div className="stat-card text-center p-3">
+                    <div className="stat-number text-lg">{stats.month}</div>
                     <div className="stat-label">月报</div>
                   </div>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-stone-100">
-                <div className="flex items-center gap-3 px-3 py-2">
-                  <div className="w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-stone-600" />
+                <div className="flex items-center gap-2.5 px-2 py-2">
+                  <div className="w-7 h-7 bg-stone-100 rounded-full flex items-center justify-center">
+                    <User className="w-3.5 h-3.5 text-stone-600" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-stone-800 truncate">{session.user?.name}</div>
-                    <div className="text-xs text-stone-400 truncate">{session.user?.email}</div>
+                    <div className="text-xs font-medium text-stone-800 truncate">{session.user?.name}</div>
+                    <div className="text-[10px] text-stone-400 truncate">{session.user?.email}</div>
                   </div>
                 </div>
               </div>
@@ -338,18 +434,18 @@ export default function AdminPage() {
           <div className="p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-3.5 h-3.5" />
                 <input
                   type="text"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="搜索报告..."
-                  className="input-field pl-10"
+                  className="input-field pl-9 text-sm"
                 />
               </div>
               <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="btn-primary flex items-center justify-center gap-2 flex-shrink-0"
+                onClick={openUploadModal}
+                className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 text-sm"
               >
                 <Plus className="w-4 h-4" />
                 上传报告
@@ -357,12 +453,12 @@ export default function AdminPage() {
             </div>
 
             {reports.length === 0 ? (
-              <div className="bg-white rounded-xl border border-stone-200 p-16 text-center">
-                <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-6 h-6 text-stone-400" />
+              <div className="bg-white rounded-xl border border-stone-200 p-12 text-center">
+                <div className="w-10 h-10 bg-stone-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <FileText className="w-5 h-5 text-stone-400" />
                 </div>
-                <p className="text-stone-600 font-medium">暂无报告</p>
-                <p className="text-stone-400 text-sm mt-1">点击上方按钮上传第一份报告</p>
+                <p className="text-stone-600 font-medium text-sm">暂无报告</p>
+                <p className="text-stone-400 text-xs mt-1">点击上方按钮上传第一份报告</p>
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
@@ -370,39 +466,39 @@ export default function AdminPage() {
                   {reports.map((report) => (
                     <div
                       key={report.id}
-                      className="flex items-center gap-4 p-4 hover:bg-stone-50 transition-colors group"
+                      className="flex items-center gap-3.5 p-3.5 hover:bg-stone-50 transition-colors group"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-600">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
                             {typeLabels[report.type as keyof typeof typeLabels]}
                           </span>
-                          <span className="text-xs text-stone-400">{report.topic}</span>
+                          <span className="text-[10px] text-stone-400">{report.topic}</span>
                         </div>
-                        <p className="font-medium text-stone-800 truncate">{report.title}</p>
-                        <p className="text-xs text-stone-400 mt-0.5">{report.createTime.split('T')[0]}</p>
+                        <p className="font-medium text-stone-800 truncate text-sm">{report.title}</p>
+                        <p className="text-[10px] text-stone-400 mt-0.5">{report.createTime.split('T')[0]}</p>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleRead(report.id)}
-                          className="btn-ghost p-2"
+                          className="btn-ghost p-1.5"
                           title="查看"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => openEditModal(report)}
-                          className="btn-ghost p-2"
+                          className="btn-ghost p-1.5"
                           title="编辑"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(report.id)}
-                          className="btn-ghost p-2 text-red-500 hover:bg-red-50"
+                          className="btn-ghost p-1.5 text-red-500 hover:bg-red-50"
                           title="删除"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -418,55 +514,95 @@ export default function AdminPage() {
         <>
           <div className="modal-backdrop" onClick={() => setIsUploadModalOpen(false)} />
           <div className="modal-content animate-slide-up">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
-              <h3 className="font-semibold text-stone-900">上传报告</h3>
-              <button onClick={() => setIsUploadModalOpen(false)} className="btn-ghost p-2">
-                <X className="w-5 h-5" />
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+              <h3 className="font-semibold text-stone-900 text-sm">上传报告</h3>
+              <button onClick={() => setIsUploadModalOpen(false)} className="btn-ghost p-1.5">
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-5 space-y-3.5">
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">选择文件</label>
-                <input
-                  type="file"
-                  accept=".html"
-                  onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
-                  className="w-full text-sm text-stone-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200 file:transition-colors"
-                />
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">选择文件</label>
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200 ${
+                    isDragging
+                      ? 'border-stone-400 bg-stone-50'
+                      : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'
+                  } ${uploadForm.file ? 'border-stone-300 bg-stone-50' : ''}`}
+                >
+                  <input
+                    type="file"
+                    accept=".html"
+                    id="file-input"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+                  />
+                  <label htmlFor="file-input" className="cursor-pointer">
+                    <UploadCloud className="w-7 h-7 text-stone-400 mx-auto mb-2" />
+                    {uploadForm.file ? (
+                      <div>
+                        <p className="text-xs text-stone-600 font-medium">{uploadForm.file.name}</p>
+                        <p className="text-[10px] text-stone-400 mt-0.5">点击更换文件</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-stone-600">拖拽文件到此处，或点击选择</p>
+                        <p className="text-[10px] text-stone-400 mt-0.5">支持 .html 文件</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">标题</label>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">标题</label>
                 <input
                   type="text"
                   value={uploadForm.title}
                   onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
                   placeholder="报告标题"
-                  className="input-field"
+                  className="input-field text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">类型</label>
-                <select
-                  value={uploadForm.type}
-                  onChange={(e) => setUploadForm({ ...uploadForm, type: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="day">日报</option>
-                  <option value="week">周报</option>
-                  <option value="month">月报</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-stone-700 mb-1.5">类型</label>
+                  <select
+                    value={uploadForm.type}
+                    onChange={(e) => setUploadForm({ ...uploadForm, type: e.target.value })}
+                    className="input-field text-sm"
+                  >
+                    <option value="day">日报</option>
+                    <option value="week">周报</option>
+                    <option value="month">月报</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-700 mb-1.5">主题</label>
+                  {topics.length > 0 ? (
+                    <select
+                      value={uploadForm.topic}
+                      onChange={(e) => setUploadForm({ ...uploadForm, topic: e.target.value })}
+                      className="input-field text-sm"
+                    >
+                      {topics.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={uploadForm.topic}
+                      onChange={(e) => setUploadForm({ ...uploadForm, topic: e.target.value })}
+                      placeholder="主题分类"
+                      className="input-field text-sm"
+                    />
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">主题</label>
-                <input
-                  type="text"
-                  value={uploadForm.topic}
-                  onChange={(e) => setUploadForm({ ...uploadForm, topic: e.target.value })}
-                  placeholder="主题分类"
-                  className="input-field"
-                />
-              </div>
-              <button onClick={handleUpload} className="btn-primary w-full">
+              <button onClick={handleUpload} className="btn-primary w-full text-sm">
                 确认上传
               </button>
             </div>
@@ -478,46 +614,60 @@ export default function AdminPage() {
         <>
           <div className="modal-backdrop" onClick={() => setIsEditModalOpen(false)} />
           <div className="modal-content animate-slide-up">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
-              <h3 className="font-semibold text-stone-900">编辑报告</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="btn-ghost p-2">
-                <X className="w-5 h-5" />
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+              <h3 className="font-semibold text-stone-900 text-sm">编辑报告</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="btn-ghost p-1.5">
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-5 space-y-3.5">
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">标题</label>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">标题</label>
                 <input
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                   placeholder="报告标题"
-                  className="input-field"
+                  className="input-field text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">类型</label>
-                <select
-                  value={editForm.type}
-                  onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="day">日报</option>
-                  <option value="week">周报</option>
-                  <option value="month">月报</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-stone-700 mb-1.5">类型</label>
+                  <select
+                    value={editForm.type}
+                    onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                    className="input-field text-sm"
+                  >
+                    <option value="day">日报</option>
+                    <option value="week">周报</option>
+                    <option value="month">月报</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-700 mb-1.5">主题</label>
+                  {topics.length > 0 ? (
+                    <select
+                      value={editForm.topic}
+                      onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
+                      className="input-field text-sm"
+                    >
+                      {topics.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={editForm.topic}
+                      onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
+                      placeholder="主题分类"
+                      className="input-field text-sm"
+                    />
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">主题</label>
-                <input
-                  type="text"
-                  value={editForm.topic}
-                  onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
-                  placeholder="主题分类"
-                  className="input-field"
-                />
-              </div>
-              <button onClick={handleEdit} className="btn-primary w-full">
+              <button onClick={handleEdit} className="btn-primary w-full text-sm">
                 保存修改
               </button>
             </div>
@@ -528,23 +678,23 @@ export default function AdminPage() {
       {isReadModalOpen && selectedReport && (
         <>
           <div className="modal-backdrop" onClick={() => setIsReadModalOpen(false)} />
-          <div className="modal-content animate-slide-up max-w-5xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
-              <div>
-                <h3 className="font-medium text-stone-900">{selectedReport.title}</h3>
-                <p className="text-xs text-stone-500 mt-0.5">
+          <div className="fixed inset-0 z-50 flex flex-col bg-white">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-stone-900 text-sm truncate">{selectedReport.title}</h3>
+                <p className="text-[11px] text-stone-500 mt-0.5">
                   {typeLabels[selectedReport.type as keyof typeof typeLabels]} · {selectedReport.topic}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => {
                     setIsReadModalOpen(false)
                     openEditModal(selectedReport)
                   }}
-                  className="btn-ghost text-sm flex items-center gap-1.5"
+                  className="btn-ghost text-xs flex items-center gap-1.5 px-2.5 py-1.5"
                 >
-                  <Edit3 className="w-4 h-4" />
+                  <Edit3 className="w-3.5 h-3.5" />
                   编辑
                 </button>
                 <button
@@ -552,20 +702,20 @@ export default function AdminPage() {
                     handleDelete(selectedReport.id)
                     setIsReadModalOpen(false)
                   }}
-                  className="btn-ghost text-sm text-red-500 hover:bg-red-50 flex items-center gap-1.5"
+                  className="btn-ghost text-xs text-red-500 hover:bg-red-50 flex items-center gap-1.5 px-2.5 py-1.5"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                   删除
                 </button>
-                <button onClick={() => setIsReadModalOpen(false)} className="btn-ghost p-2">
-                  <X className="w-5 h-5" />
+                <button onClick={() => setIsReadModalOpen(false)} className="btn-ghost p-1.5">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            <div className="h-[calc(85vh-73px)] overflow-auto p-6">
+            <div className="flex-1 overflow-hidden">
               <iframe
                 srcDoc={selectedReport.content}
-                className="w-full h-full min-h-[500px] border-none bg-white rounded-lg"
+                className="w-full h-full border-none bg-white"
                 title={selectedReport.title}
               />
             </div>
