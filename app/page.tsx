@@ -27,29 +27,6 @@ const typeColors = {
   month: 'bg-violet-500/10 text-violet-600 border-violet-500/20',
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.2,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-    },
-  },
-}
-
 export default function Home() {
   const [reports, setReports] = useState<Report[]>([])
   const [topics, setTopics] = useState<string[]>([])
@@ -82,12 +59,10 @@ export default function Home() {
   useEffect(() => {
     fetchReports()
     fetchTopics()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     fetchReports()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, activeTopic, keyword])
 
   const handleRead = async (id: string) => {
@@ -104,12 +79,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-stone-50">
       <header className="bg-white/60 backdrop-blur-xl border-b border-stone-200/50 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
-          <motion.div 
-            className="flex items-center gap-3"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-stone-900 to-stone-800 rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/20">
               <span className="text-white text-sm font-bold">档</span>
             </div>
@@ -117,30 +87,20 @@ export default function Home() {
               <span className="font-semibold text-stone-900">报告归档</span>
               <p className="text-xs text-stone-500">整理和回顾您的工作</p>
             </div>
-          </motion.div>
-          <motion.nav 
-            className="flex items-center gap-2"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
+          </div>
+          <nav className="flex items-center gap-2">
             <a 
               href="/admin" 
               className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-all duration-200"
             >
               管理
             </a>
-          </motion.nav>
+          </nav>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-16">
-        <motion.section 
-          className="mb-12 lg:mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
+        <section className="mb-12 lg:mb-16">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
             <div className="flex-1">
               <h1 className="text-4xl lg:text-5xl font-bold text-stone-900 mb-3 tracking-tight">
@@ -150,42 +110,31 @@ export default function Home() {
                 整理和回顾您的日报、周报和月报，让工作更有条理
               </p>
             </div>
-            <motion.div 
-              className="flex items-center gap-2 bg-white border border-stone-200 rounded-xl p-1.5 shadow-sm"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <motion.button
+            <div className="flex items-center gap-2 bg-white border border-stone-200 rounded-xl p-1.5 shadow-sm">
+              <button
                 onClick={() => setViewMode('list')}
                 className={`p-2.5 rounded-lg transition-all duration-200 ${
                   viewMode === 'list' 
                     ? 'bg-stone-900 text-white shadow-md' 
                     : 'text-stone-500 hover:bg-stone-100'
                 }`}
-                whileTap={{ scale: 0.95 }}
               >
                 <List className="w-5 h-5" />
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 onClick={() => setViewMode('card')}
                 className={`p-2.5 rounded-lg transition-all duration-200 ${
                   viewMode === 'card' 
                     ? 'bg-stone-900 text-white shadow-md' 
                     : 'text-stone-500 hover:bg-stone-100'
                 }`}
-                whileTap={{ scale: 0.95 }}
               >
                 <LayoutGrid className="w-5 h-5" />
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           </div>
           
-          <motion.div 
-            className="relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
+          <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
             <input
               type="text"
@@ -194,30 +143,23 @@ export default function Home() {
               placeholder="搜索报告标题或内容..."
               className="w-full pl-12 pr-4 py-4 bg-white border border-stone-200 rounded-2xl text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-all duration-200 shadow-sm text-base"
             />
-          </motion.div>
-        </motion.section>
+          </div>
+        </section>
 
-        <motion.section 
-          className="mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
+        <section className="mb-8">
           <div className="flex items-center gap-3 flex-wrap">
-            <motion.button
+            <button
               onClick={() => setActiveType('all')}
               className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                 activeType === 'all'
                   ? 'bg-stone-900 text-white shadow-lg shadow-stone-900/20'
                   : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:bg-stone-50'
               }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
               全部
-            </motion.button>
-            {Object.entries(typeLabels).map(([value, label], index) => (
-              <motion.button
+            </button>
+            {Object.entries(typeLabels).map(([value, label]) => (
+              <button
                 key={value}
                 onClick={() => setActiveType(value)}
                 className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
@@ -225,39 +167,27 @@ export default function Home() {
                     ? 'bg-stone-900 text-white shadow-lg shadow-stone-900/20'
                     : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:bg-stone-50'
                 }`}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.1 * index }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 {label}
-              </motion.button>
+              </button>
             ))}
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section 
-          className="mb-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
+        <section className="mb-12">
           <div className="flex items-center gap-2 flex-wrap">
-            <motion.button
+            <button
               onClick={() => setActiveTopic('all')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTopic === 'all'
                   ? 'bg-stone-100 text-stone-900'
                   : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
               }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
               全部分类
-            </motion.button>
-            {topics.map((topic, index) => (
-              <motion.button
+            </button>
+            {topics.map((topic) => (
+              <button
                 key={topic}
                 onClick={() => setActiveTopic(topic)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -265,63 +195,33 @@ export default function Home() {
                     ? 'bg-stone-100 text-stone-900'
                     : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
                 }`}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.05 * index }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 {topic}
-              </motion.button>
+              </button>
             ))}
           </div>
-        </motion.section>
+        </section>
 
         <section>
           {loading ? (
-            <motion.div 
-              className="py-24 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <motion.div 
-                className="w-12 h-12 border-4 border-stone-200 border-t-stone-900 rounded-full mx-auto"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
-            </motion.div>
+            <div className="py-24 text-center">
+              <div className="w-12 h-12 border-4 border-stone-200 border-t-stone-900 rounded-full mx-auto animate-spin"></div>
+            </div>
           ) : reports.length === 0 ? (
-            <motion.div 
-              className="py-24 text-center"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <motion.div 
-                className="w-20 h-20 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-6"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
-              >
+            <div className="py-24 text-center">
+              <div className="w-20 h-20 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <FileText className="w-10 h-10 text-stone-400" />
-              </motion.div>
+              </div>
               <p className="text-stone-600 text-lg font-medium mb-2">暂无报告</p>
               <p className="text-stone-400 text-sm">开始上传您的第一份工作报告吧</p>
-            </motion.div>
+            </div>
           ) : viewMode === 'list' ? (
-            <motion.div 
-              className="space-y-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
+            <div className="space-y-3">
               {reports.map((report) => (
-                <motion.div
+                <div
                   key={report.id}
                   onClick={() => handleRead(report.id)}
-                  className="group bg-white border border-stone-200 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:border-stone-300 hover:shadow-lg hover:shadow-stone-900/5 hover:-translate-y-0.5"
-                  variants={itemVariants}
-                  whileHover={{ x: 4 }}
+                  className="group bg-white border border-stone-200 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:border-stone-300 hover:shadow-lg hover:shadow-stone-900/5"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -344,41 +244,25 @@ export default function Home() {
                         {report.createTime.split('T')[0]}
                       </p>
                     </div>
-                    <motion.div
-                      className="w-10 h-10 bg-stone-100 rounded-xl flex items-center justify-center group-hover:bg-stone-900 transition-colors"
-                      whileHover={{ rotate: 90 }}
-                      transition={{ duration: 0.3 }}
-                    >
+                    <div className="w-10 h-10 bg-stone-100 rounded-xl flex items-center justify-center group-hover:bg-stone-900 transition-colors">
                       <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-white transition-colors" />
-                    </motion.div>
+                    </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           ) : (
-            <motion.div 
-              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {reports.map((report, index) => (
-                <motion.div
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {reports.map((report) => (
+                <div
                   key={report.id}
                   onClick={() => handleRead(report.id)}
                   className="group bg-white border border-stone-200 rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:border-stone-300 hover:shadow-2xl hover:shadow-stone-900/10 hover:-translate-y-1 relative overflow-hidden"
-                  variants={itemVariants}
-                  whileHover={{ y: -8 }}
                 >
-                  <motion.div 
-                    className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-50 ${
-                      report.type === 'day' ? 'bg-blue-500/20' :
-                      report.type === 'week' ? 'bg-emerald-500/20' : 'bg-violet-500/20'
-                    }`}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2 + index * 0.05 }}
-                  />
+                  <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-50 ${
+                    report.type === 'day' ? 'bg-blue-500/20' :
+                    report.type === 'week' ? 'bg-emerald-500/20' : 'bg-violet-500/20'
+                  }`} />
                   
                   <div className="relative">
                     <div className="flex items-center gap-3 mb-4">
@@ -402,18 +286,14 @@ export default function Home() {
                         <Calendar className="w-3 h-3" />
                         {report.createTime.split('T')[0]}
                       </p>
-                      <motion.div
-                        className="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center group-hover:bg-stone-900 transition-colors"
-                        whileHover={{ rotate: 90 }}
-                        transition={{ duration: 0.3 }}
-                      >
+                      <div className="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center group-hover:bg-stone-900 transition-colors">
                         <ArrowRight className="w-4 h-4 text-stone-600 group-hover:text-white transition-colors" />
-                      </motion.div>
+                      </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           )}
         </section>
       </main>
@@ -426,7 +306,6 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
               onClick={closeModal}
             />
             <motion.div 
@@ -434,7 +313,6 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               <div className="flex items-center justify-between px-6 lg:px-8 py-4 lg:py-5 border-b border-stone-100 bg-white/80 backdrop-blur-sm">
                 <div className="flex-1 min-w-0 pr-4">
@@ -443,14 +321,12 @@ export default function Home() {
                     {typeLabels[selectedReport.type as keyof typeof typeLabels]} · {selectedReport.topic}
                   </p>
                 </div>
-                <motion.button
+                <button
                   onClick={closeModal}
                   className="w-10 h-10 flex items-center justify-center rounded-xl bg-stone-100 hover:bg-stone-200 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                 >
                   <X className="w-5 h-5 text-stone-600" />
-                </motion.button>
+                </button>
               </div>
               <div className="flex-1 overflow-hidden bg-stone-50">
                 <iframe
