@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "dotenv -e .env.production -- prisma generate && dotenv -e .env.production -- prisma db push && dotenv -e .env.production -- next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
@@ -27,6 +27,7 @@
     "@types/react": "^18.2.40",
     "@types/react-dom": "^18.2.17",
     "autoprefixer": "^10.4.16",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8.54.0",
     "eslint-config-next": "^14.0.0",
     "postcss": "^8.4.32",
