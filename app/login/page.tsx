@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Lock, Mail, Eye, Shield, ArrowRight } from 'lucide-react'
+import { Lock, Mail, ArrowRight } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -33,59 +33,49 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="relative w-full max-w-md">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-indigo-200 rounded-3xl blur-3xl"></div>
-        
-        <div className="relative glass-card rounded-3xl p-8 animate-slide-up">
-          <div className="text-center mb-8">
-            <div className="relative inline-block mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary/30">
-                <Shield className="w-10 h-10 text-white" />
-              </div>
-              <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                <Eye className="w-4 h-4 text-white" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold gradient-text mb-2">报告管理后台</h1>
-            <p className="text-gray-500">请登录以管理您的报告</p>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-stone-100">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8 animate-in">
+          <div className="w-12 h-12 bg-stone-900 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-lg font-semibold">档</span>
           </div>
+          <h1 className="text-xl font-semibold text-stone-900">报告管理</h1>
+          <p className="text-stone-500 text-sm mt-1">请登录以继续</p>
+        </div>
 
+        <div className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm animate-in stagger-2">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600">
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4" />
-                {error}
-              </div>
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+              {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">邮箱</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="请输入邮箱"
-                  className="input-field pl-12"
+                  placeholder="admin@example.com"
+                  className="input-field pl-10"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">密码</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">密码</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="请输入密码"
-                  className="input-field pl-12"
+                  placeholder="••••••••"
+                  className="input-field pl-10"
                   required
                 />
               </div>
@@ -94,28 +84,26 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary text-lg"
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                   登录中...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   登录
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4" />
                 </span>
               )}
             </button>
           </form>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-            <p className="text-sm text-gray-500 text-center">
-              默认账号: <span className="font-medium text-gray-700">admin@example.com</span> / <span className="font-medium text-gray-700">password</span>
-            </p>
-          </div>
         </div>
+
+        <p className="text-xs text-stone-400 text-center mt-4 animate-in stagger-3">
+          默认账号: admin@example.com / password
+        </p>
       </div>
     </div>
   )

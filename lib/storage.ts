@@ -1,7 +1,5 @@
 import { put, get, del, list } from '@vercel/blob';
 
-const BLOB_STORE_NAME = 'reports-system';
-
 export async function saveFile(type: string, filename: string, content: string): Promise<string> {
   console.log('[Storage] Saving file to Vercel Blob:', { type, filename, contentLength: content.length });
   

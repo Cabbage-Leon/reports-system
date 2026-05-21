@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Book, Search, FileText, ArrowRight, Eye, X, Calendar, Tag, Sparkles } from 'lucide-react'
+import { Search, ArrowRight, X, Calendar, Tag } from 'lucide-react'
 
 interface Report {
   id: string
@@ -12,6 +12,12 @@ interface Report {
   filePath: string
   createTime: string
   content?: string
+}
+
+const typeLabels = {
+  day: '日报',
+  week: '周报',
+  month: '月报',
 }
 
 export default function Home() {
@@ -59,106 +65,83 @@ export default function Home() {
     setIsReading(true)
   }
 
-  const typeConfig = {
-    day: { label: '日报', color: 'badge-success', bgColor: 'from-green-500/20 to-emerald-500/20' },
-    week: { label: '周报', color: 'badge-info', bgColor: 'from-blue-500/20 to-indigo-500/20' },
-    month: { label: '月报', color: 'badge-warning', bgColor: 'from-orange-500/20 to-amber-500/20' },
+  const closeModal = () => {
+    setIsReading(false)
+    setTimeout(() => setSelectedReport(null), 300)
   }
 
   return (
     <div className="min-h-screen">
-      <header className="glass-header">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 group-hover:shadow-xl group-hover:shadow-primary/40 transition-shadow">
-              <Book className="w-5 h-5 text-white" />
+      <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-semibold">档</span>
             </div>
-            <h1 className="text-xl font-bold gradient-text">报告归档</h1>
+            <span className="font-medium text-stone-800">报告归档</span>
           </div>
-          <nav className="flex items-center gap-4">
-            <a 
-              href="/admin" 
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-primary transition-colors"
-            >
-              管理后台
+          <nav className="flex items-center gap-1">
+            <a href="/admin" className="btn-ghost">
+              管理
             </a>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <section className="text-center mb-12 animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-6">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">工作 · 政策 · 行业研究 · 日常总结</span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">日报</span>
-            <span className="text-gray-800 mx-3">|</span>
-            <span className="gradient-text">周报</span>
-            <span className="text-gray-800 mx-3">|</span>
-            <span className="gradient-text">月报</span>
-          </h2>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto mb-8">
-            在这里管理和浏览您的工作报告，支持多种分类和快速搜索
+      <main className="max-w-3xl mx-auto px-6 py-16">
+        <section className="mb-16 animate-in">
+          <h1 className="text-display text-4xl text-stone-900 mb-4">
+            工作报告
+          </h1>
+          <p className="text-stone-500 text-lg mb-8 max-w-xl">
+            整理和回顾您的工作日报、周报和月报
           </p>
           
-          <div className="relative max-w-xl mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="搜索报告标题、主题..."
-              className="input-field pl-12 pr-4 py-4 text-lg"
+              placeholder="搜索报告..."
+              className="input-field pl-12"
             />
           </div>
         </section>
 
-        <section className="mb-10">
-          <div className="flex flex-wrap justify-center gap-3">
-            {[
-              { value: 'all', label: '全部' },
-              { value: 'day', label: '日报' },
-              { value: 'week', label: '周报' },
-              { value: 'month', label: '月报' },
-            ].map((item) => (
+        <section className="mb-8">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setActiveType('all')}
+              className={`type-pill ${activeType === 'all' ? 'type-pill-active' : 'type-pill-inactive'}`}
+            >
+              全部
+            </button>
+            {Object.entries(typeLabels).map(([value, label]) => (
               <button
-                key={item.value}
-                onClick={() => setActiveType(item.value)}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                  activeType === item.value
-                    ? 'bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg shadow-primary/30'
-                    : 'bg-white/80 text-gray-600 hover:bg-white hover:shadow-md'
-                }`}
+                key={value}
+                onClick={() => setActiveType(value)}
+                className={`type-pill ${activeType === value ? 'type-pill-active' : 'type-pill-inactive'}`}
               >
-                {item.label}
+                {label}
               </button>
             ))}
           </div>
         </section>
 
-        <section className="mb-12">
-          <div className="flex flex-wrap justify-center gap-2">
+        <section className="mb-8">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveTopic('all')}
-              className={`badge transition-all duration-300 ${
-                activeTopic === 'all'
-                  ? 'bg-primary text-white shadow-md'
-                  : 'bg-white/60 text-gray-600 hover:bg-white hover:shadow-sm'
-              }`}
+              className={`type-pill text-xs ${activeTopic === 'all' ? 'type-pill-active' : 'type-pill-inactive'}`}
             >
-              全部标签
+              全部主题
             </button>
             {topics.map((topic) => (
               <button
                 key={topic}
                 onClick={() => setActiveTopic(topic)}
-                className={`badge transition-all duration-300 ${
-                  activeTopic === topic
-                    ? 'bg-primary text-white shadow-md'
-                    : 'bg-white/60 text-gray-600 hover:bg-white hover:shadow-sm'
-                }`}
+                className={`type-pill text-xs ${activeTopic === topic ? 'type-pill-active' : 'type-pill-inactive'}`}
               >
                 {topic}
               </button>
@@ -166,81 +149,85 @@ export default function Home() {
           </div>
         </section>
 
-        {loading ? (
-          <div className="text-center py-16">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-              <div className="absolute inset-0 w-16 h-16 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+        <section className="mt-12">
+          {loading ? (
+            <div className="py-16 text-center">
+              <div className="w-6 h-6 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin mx-auto"></div>
             </div>
-            <p className="mt-6 text-gray-500 text-lg">加载中...</p>
-          </div>
-        ) : reports.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <FileText className="w-10 h-10 text-gray-400" />
+          ) : reports.length === 0 ? (
+            <div className="py-20 text-center">
+              <div className="text-stone-300 mb-4">
+                <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-stone-500">暂无匹配的报告</p>
             </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">暂无匹配的报告</h3>
-            <p className="text-gray-400">试试调整筛选条件或搜索关键词</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {reports.map((report, index) => (
-              <div
-                key={report.id}
-                className="glass-card rounded-2xl p-6 card-hover animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <span className={`badge ${typeConfig[report.type as keyof typeof typeConfig].color}`}>
-                    {typeConfig[report.type as keyof typeof typeConfig].label}
-                  </span>
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
-                    <Calendar className="w-3 h-3" />
-                    {report.createTime.split('T')[0]}
+          ) : (
+            <div className="divide-y divide-stone-100">
+              {reports.map((report, index) => (
+                <div
+                  key={report.id}
+                  onClick={() => handleRead(report.id)}
+                  className="report-item group opacity-0 animate-in"
+                  style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'forwards' }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-600">
+                          {typeLabels[report.type as keyof typeof typeLabels]}
+                        </span>
+                        <span className="text-xs text-stone-400 flex items-center gap-1">
+                          <Tag className="w-3 h-3" />
+                          {report.topic}
+                        </span>
+                      </div>
+                      <h3 className="report-title">{report.title}</h3>
+                      <p className="report-meta flex items-center gap-1 mt-1">
+                        <Calendar className="w-3 h-3" />
+                        {report.createTime.split('T')[0]}
+                      </p>
+                    </div>
+                    <ArrowRight className="report-arrow w-5 h-5 flex-shrink-0 mt-1" />
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3 line-clamp-2">
-                  {report.title}
-                </h3>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-5">
-                  <Tag className="w-4 h-4" />
-                  <span>{report.topic}</span>
-                </div>
-                <button
-                  onClick={() => handleRead(report.id)}
-                  className="w-full py-3 bg-gradient-to-r from-primary/10 to-indigo-100 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:from-primary/20 hover:to-indigo-200 transition-all duration-300"
-                >
-                  <Eye className="w-4 h-4" />
-                  阅读全文
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </section>
       </main>
 
-      {isReading && selectedReport && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden animate-slide-up">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="text-xl font-bold text-gray-800">{selectedReport.title}</h3>
+      {selectedReport && (
+        <>
+          <div 
+            className={`fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-50 transition-opacity duration-300 ${isReading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            onClick={closeModal}
+          />
+          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden z-50 transition-all duration-300 ${isReading ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <div>
+                <h2 className="font-medium text-stone-900">{selectedReport.title}</h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  {typeLabels[selectedReport.type as keyof typeof typeLabels]} · {selectedReport.topic}
+                </p>
+              </div>
               <button
-                onClick={() => setIsReading(false)}
-                className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                onClick={closeModal}
+                className="btn-ghost p-2"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 h-[calc(90vh-80px)] overflow-auto">
+            <div className="h-[calc(85vh-73px)] overflow-auto">
               <iframe
                 srcDoc={selectedReport.content}
-                className="w-full h-full min-h-[500px] border-none rounded-xl bg-white"
+                className="w-full h-full min-h-[500px] border-none bg-white"
                 title={selectedReport.title}
               />
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
