@@ -1227,9 +1227,12 @@ export default function AdminPage() {
                   type="text"
                   value={syncForm.folderToken}
                   onChange={(e) => setSyncForm({ ...syncForm, folderToken: e.target.value })}
-                  placeholder="飞书文件夹 Token，不填则同步根目录"
+                  placeholder="飞书文件夹 Token，不填则获取所有可访问的文件"
                   className="input-field text-sm"
                 />
+                <p className="text-xs text-stone-500 mt-1.5">
+                  💡 不填写会获取所有可访问文件；填写后只同步该文件夹内文件
+                </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

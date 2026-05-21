@@ -88,21 +88,41 @@ export class SyncService {
     let failedCount = 0;
 
     try {
+      console.log('开始同步，配置信息:', {
+        folderToken: config.folderToken || '(未设置，获取所有文件)',
+        syncRange: config.syncRange,
+        syncDays: config.syncDays,
+        fileTypes: config.fileTypes,
+      });
+      
       // 获取飞书文件列表
       const files = await feishuClient.listFiles(config.folderToken || undefined);
+      console.log(`从飞书获取到 ${files.length} 个文件`);
       
       // 计算起始日期
       const startDate = this.getStartDate(config.syncRange, config.syncDays);
+      console.log(`同步时间范围: ${startDate.toLocaleString()} 至 ${new Date().toLocaleString()}`);
       
       // 获取允许的文件类型
       const allowedFileTypes = config.fileTypes || ['html', 'md'];
+      console.log(`允许的文件类型: ${allowedFileTypes.join(', ')}`);
       
       // 过滤时间范围和文件类型的文档
       const filteredFiles = files.filter(file => {
         const inRange = this.isFileInRange(file.updateTime, startDate);
         const typeMatch = this.isFileTypeMatch(file.title, allowedFileTypes);
+        
+        if (!inRange) {
+          console.log(`跳过文件 "${file.title}"：不在时间范围内`);
+        }
+        if (!typeMatch) {
+          console.log(`跳过文件 "${file.title}"：文件类型不匹配`);
+        }
+        
         return inRange && typeMatch;
       });
+      
+      console.log(`经过过滤，剩余 ${filteredFiles.length} 个文件待同步`);
 
       // 获取已同步的文件 token 列表（用于去重）
       const existingTokens = await prisma.report.findMany({

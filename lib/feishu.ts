@@ -17,6 +17,8 @@ interface FeishuListFilesResponse {
       create_time: string;
       update_time: string;
     }>;
+    has_more?: boolean;
+    page_token?: string;
   };
 }
 
@@ -78,29 +80,49 @@ export class FeishuClient {
     updateTime: string;
   }>> {
     const token = await this.getTenantAccessToken();
-    
-    let url = 'https://open.feishu.cn/open-apis/drive/v1/files';
-    if (folderToken) {
-      url += `?folder_token=${folderToken}`;
+    const allFiles: Array<{
+      token: string;
+      title: string;
+      type: string;
+      updateTime: string;
+    }> = [];
+    let hasMore = true;
+    let pageToken = '';
+
+    while (hasMore) {
+      const url = new URL('https://open.feishu.cn/open-apis/drive/v1/files');
+      if (folderToken) {
+        url.searchParams.set('folder_token', folderToken);
+      }
+      if (pageToken) {
+        url.searchParams.set('page_token', pageToken);
+      }
+      url.searchParams.set('page_size', '100'); // 每页最大数量
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data: FeishuListFilesResponse = await response.json();
+      if (data.code !== 0) {
+        throw new Error(`Failed to list files: ${data.msg}`);
+      }
+
+      const files = data.data?.files || [];
+      allFiles.push(...files.map(file => ({
+        token: file.token,
+        title: file.title,
+        type: file.type,
+        updateTime: file.update_time,
+      })));
+
+      hasMore = !!data.data?.has_more;
+      pageToken = data.data?.page_token || '';
     }
 
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    const data: FeishuListFilesResponse = await response.json();
-    if (data.code !== 0) {
-      throw new Error(`Failed to list files: ${data.msg}`);
-    }
-
-    return (data.data?.files || []).map(file => ({
-      token: file.token,
-      title: file.title,
-      type: file.type,
-      updateTime: file.update_time,
-    }));
+    return allFiles;
   }
 
   async getDocumentContent(docToken: string): Promise<string> {
