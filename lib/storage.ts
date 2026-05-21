@@ -1,34 +1,68 @@
-import fs from 'fs'
-import path from 'path'
+import { put, get, del, list } from '@vercel/blob';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
-
-export function ensureUploadDir(type: string): string {
-  const typeDir = path.join(UPLOAD_DIR, type)
-  if (!fs.existsSync(typeDir)) {
-    fs.mkdirSync(typeDir, { recursive: true })
+export async function saveFile(type: string, filename: string, content: string): Promise<string> {
+  console.log('[Storage] Saving file to Vercel Blob (PRIVATE access):', { type, filename, contentLength: content.length });
+  
+  const blobPath = `${type}/${filename}`;
+  
+  try {
+    const result = await put(blobPath, content, {
+      access: 'private',  // 使用私有访问模式
+      contentType: 'text/html',
+    });
+    
+    console.log('[Storage] File saved successfully:', result.url);
+    return result.url;
+  } catch (error) {
+    console.error('[Storage] Failed to save file:', filename, error);
+    throw error;
   }
-  return typeDir
 }
 
-export function saveFile(type: string, filename: string, content: string): string {
-  const dir = ensureUploadDir(type)
-  const filePath = path.join(dir, filename)
-  fs.writeFileSync(filePath, content)
-  return filePath
+export async function readFile(filePath: string): Promise<string> {
+  console.log('[Storage] Reading file:', filePath);
+  
+  try {
+    const result = await get(filePath, { access: 'private' }); // 私有访问
+    if (!result || !result.stream) {
+      throw new Error('File not found');
+    }
+    const buffer = await new Response(result.stream).arrayBuffer();
+    return Buffer.from(buffer).toString('utf-8');
+  } catch (error) {
+    console.error('[Storage] Failed to read file:', filePath, error);
+    throw error;
+  }
 }
 
-export function readFile(filePath: string): string {
-  return fs.readFileSync(filePath, 'utf-8')
+export async function deleteFile(filePath: string): Promise<void> {
+  console.log('[Storage] Deleting file:', filePath);
+  
+  try {
+    await del(filePath);
+    console.log('[Storage] File deleted successfully');
+  } catch (error) {
+    console.error('[Storage] Failed to delete file:', filePath, error);
+    throw error;
+  }
 }
 
-export function deleteFile(filePath: string): void {
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath)
+export async function listFiles(type?: string): Promise<string[]> {
+  console.log('[Storage] Listing files:', type);
+  
+  try {
+    const prefix = type ? `${type}/` : '';
+    const result = await list({ prefix });
+    return result.blobs.map(blob => blob.url);
+  } catch (error) {
+    console.error('[Storage] Failed to list files:', error);
+    throw error;
   }
 }
 
 export function generateFilename(title: string): string {
-  const sanitizedTitle = title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')
-  return `${Date.now()}_${sanitizedTitle}.html`
+  const sanitizedTitle = title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+  const filename = `${Date.now()}_${sanitizedTitle}.html`;
+  console.log('[Storage] Generated filename:', filename);
+  return filename;
 }
