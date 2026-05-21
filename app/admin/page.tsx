@@ -336,9 +336,34 @@ export default function AdminPage() {
       </header>
 
       <div className="flex">
-        <aside className={`${sidebarOpen ? 'w-60' : 'w-0'} lg:w-60 fixed lg:sticky top-14 h-[calc(100vh-56px)] overflow-hidden transition-all duration-300 z-30`}>
-          <div className="h-full bg-white border-r border-stone-200 overflow-y-auto">
+        {/* 侧边栏遮罩层 - 仅在移动端显示 */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/30 z-20 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
+        {/* 侧边栏 */}
+        <aside className={`
+          fixed lg:sticky top-14 left-0 h-[calc(100vh-56px)]
+          transition-all duration-300 z-30
+          ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}
+          lg:w-60 lg:translate-x-0
+        `}>
+          <div className="h-full bg-white border-r border-stone-200 overflow-y-auto w-64">
             <div className="p-4 space-y-6">
+              {/* 移动端关闭按钮 */}
+              <div className="lg:hidden flex items-center justify-between mb-4">
+                <span className="text-xs font-medium text-stone-400">菜单</span>
+                <button 
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-1.5 hover:bg-stone-100 rounded-lg"
+                >
+                  <X className="w-4 h-4 text-stone-500" />
+                </button>
+              </div>
+              
               <div>
                 <p className="text-label px-2 mb-2">报告类型</p>
                 <div className="space-y-0.5">
@@ -350,7 +375,10 @@ export default function AdminPage() {
                   ].map((item) => (
                     <button
                       key={item.value}
-                      onClick={() => setActiveType(item.value)}
+                      onClick={() => {
+                        setActiveType(item.value)
+                        setSidebarOpen(false) // 移动端点击后关闭侧边栏
+                      }}
                       className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                         activeType === item.value
                           ? 'bg-stone-100 text-stone-900'
@@ -368,7 +396,10 @@ export default function AdminPage() {
                 <p className="text-label px-2 mb-2">主题分类</p>
                 <div className="space-y-0.5">
                   <button
-                    onClick={() => setActiveTopic('all')}
+                    onClick={() => {
+                      setActiveTopic('all')
+                      setSidebarOpen(false)
+                    }}
                     className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                       activeTopic === 'all'
                         ? 'bg-stone-100 text-stone-900'
@@ -381,7 +412,10 @@ export default function AdminPage() {
                   {topics.map((topic) => (
                     <button
                       key={topic}
-                      onClick={() => setActiveTopic(topic)}
+                      onClick={() => {
+                        setActiveTopic(topic)
+                        setSidebarOpen(false)
+                      }}
                       className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                         activeTopic === topic
                           ? 'bg-stone-100 text-stone-900'
@@ -470,7 +504,7 @@ export default function AdminPage() {
                       key={report.id}
                       className="flex items-center gap-3.5 p-3.5 hover:bg-stone-50 transition-colors group"
                     >
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0" onClick={() => handleRead(report.id)}>
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
                             {typeLabels[report.type as keyof typeof typeLabels]}
@@ -480,27 +514,36 @@ export default function AdminPage() {
                         <p className="font-medium text-stone-800 truncate text-sm">{report.title}</p>
                         <p className="text-[10px] text-stone-400 mt-0.5">{report.createTime.split('T')[0]}</p>
                       </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleRead(report.id)}
-                          className="btn-ghost p-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRead(report.id)
+                          }}
+                          className="btn-ghost p-2 sm:p-1.5"
                           title="查看"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                         </button>
                         <button
-                          onClick={() => openEditModal(report)}
-                          className="btn-ghost p-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openEditModal(report)
+                          }}
+                          className="btn-ghost p-2 sm:p-1.5"
                           title="编辑"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
+                          <Edit3 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                         </button>
                         <button
-                          onClick={() => handleDelete(report.id)}
-                          className="btn-ghost p-1.5 text-red-500 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(report.id)
+                          }}
+                          className="btn-ghost p-2 sm:p-1.5 text-red-500 hover:bg-red-50"
                           title="删除"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -515,14 +558,14 @@ export default function AdminPage() {
       {isUploadModalOpen && (
         <>
           <div className="modal-backdrop" onClick={() => setIsUploadModalOpen(false)} />
-          <div className="modal-content animate-slide-up">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+          <div className="modal-content animate-slide-up max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-stone-100 flex-shrink-0">
               <h3 className="font-semibold text-stone-900 text-sm">上传报告</h3>
               <button onClick={() => setIsUploadModalOpen(false)} className="btn-ghost p-1.5">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-5 space-y-3.5">
+            <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-medium text-stone-700 mb-1.5">选择文件</label>
                 <div
@@ -546,7 +589,7 @@ export default function AdminPage() {
                     <UploadCloud className="w-7 h-7 text-stone-400 mx-auto mb-2" />
                     {uploadForm.file ? (
                       <div>
-                        <p className="text-xs text-stone-600 font-medium">{uploadForm.file.name}</p>
+                        <p className="text-xs text-stone-600 font-medium break-all">{uploadForm.file.name}</p>
                         <p className="text-[10px] text-stone-400 mt-0.5">点击更换文件</p>
                       </div>
                     ) : (
@@ -568,7 +611,7 @@ export default function AdminPage() {
                   className="input-field text-sm"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-stone-700 mb-1.5">类型</label>
                   <select
@@ -584,27 +627,30 @@ export default function AdminPage() {
                 <div>
                   <label className="block text-xs font-medium text-stone-700 mb-1.5">主题</label>
                   {topics.length > 0 ? (
-                    <select
-                      value={uploadForm.topic}
-                      onChange={(e) => setUploadForm({ ...uploadForm, topic: e.target.value })}
-                      className="input-field text-sm"
-                    >
-                      {topics.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={uploadForm.topic}
-                      onChange={(e) => setUploadForm({ ...uploadForm, topic: e.target.value })}
-                      placeholder="主题分类"
-                      className="input-field text-sm"
-                    />
-                  )}
+                    <div className="space-y-1.5">
+                      <select
+                        value={uploadForm.topic}
+                        onChange={(e) => setUploadForm({ ...uploadForm, topic: e.target.value })}
+                        className="input-field text-sm"
+                      >
+                        <option value="">选择现有主题...</option>
+                        {topics.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-stone-400">或者直接在下方输入新主题</p>
+                    </div>
+                  ) : null}
+                  <input
+                    type="text"
+                    value={uploadForm.topic}
+                    onChange={(e) => setUploadForm({ ...uploadForm, topic: e.target.value })}
+                    placeholder="主题分类"
+                    className="input-field text-sm"
+                  />
                 </div>
               </div>
-              <button onClick={handleUpload} className="btn-primary w-full text-sm">
+              <button onClick={handleUpload} className="btn-primary w-full text-sm flex-shrink-0">
                 确认上传
               </button>
             </div>
@@ -615,14 +661,14 @@ export default function AdminPage() {
       {isEditModalOpen && (
         <>
           <div className="modal-backdrop" onClick={() => setIsEditModalOpen(false)} />
-          <div className="modal-content animate-slide-up">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+          <div className="modal-content animate-slide-up max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-stone-100 flex-shrink-0">
               <h3 className="font-semibold text-stone-900 text-sm">编辑报告</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="btn-ghost p-1.5">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-5 space-y-3.5">
+            <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-medium text-stone-700 mb-1.5">标题</label>
                 <input
@@ -633,7 +679,7 @@ export default function AdminPage() {
                   className="input-field text-sm"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-stone-700 mb-1.5">类型</label>
                   <select
@@ -649,24 +695,27 @@ export default function AdminPage() {
                 <div>
                   <label className="block text-xs font-medium text-stone-700 mb-1.5">主题</label>
                   {topics.length > 0 ? (
-                    <select
-                      value={editForm.topic}
-                      onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
-                      className="input-field text-sm"
-                    >
-                      {topics.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={editForm.topic}
-                      onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
-                      placeholder="主题分类"
-                      className="input-field text-sm"
-                    />
-                  )}
+                    <div className="space-y-1.5">
+                      <select
+                        value={editForm.topic}
+                        onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
+                        className="input-field text-sm"
+                      >
+                        <option value="">选择现有主题...</option>
+                        {topics.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-stone-400">或者直接在下方输入新主题</p>
+                    </div>
+                  ) : null}
+                  <input
+                    type="text"
+                    value={editForm.topic}
+                    onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
+                    placeholder="主题分类"
+                    className="input-field text-sm"
+                  />
                 </div>
               </div>
               <button onClick={handleEdit} className="btn-primary w-full text-sm">
@@ -681,7 +730,7 @@ export default function AdminPage() {
         <>
           <div className="modal-backdrop" onClick={() => setIsReadModalOpen(false)} />
           <div className="fixed inset-0 z-50 flex flex-col bg-white">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-stone-100 flex-shrink-0">
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-stone-900 text-sm truncate">{selectedReport.title}</h3>
                 <p className="text-[11px] text-stone-500 mt-0.5">
@@ -694,22 +743,22 @@ export default function AdminPage() {
                     setIsReadModalOpen(false)
                     openEditModal(selectedReport)
                   }}
-                  className="btn-ghost text-xs flex items-center gap-1.5 px-2.5 py-1.5"
+                  className="btn-ghost text-xs flex items-center gap-1.5 px-2.5 py-1.5 sm:px-2 sm:py-1"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  编辑
+                  <span className="hidden sm:inline">编辑</span>
                 </button>
                 <button
                   onClick={() => {
                     handleDelete(selectedReport.id)
                     setIsReadModalOpen(false)
                   }}
-                  className="btn-ghost text-xs text-red-500 hover:bg-red-50 flex items-center gap-1.5 px-2.5 py-1.5"
+                  className="btn-ghost text-xs text-red-500 hover:bg-red-50 flex items-center gap-1.5 px-2.5 py-1.5 sm:px-2 sm:py-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  删除
+                  <span className="hidden sm:inline">删除</span>
                 </button>
-                <button onClick={() => setIsReadModalOpen(false)} className="btn-ghost p-1.5">
+                <button onClick={() => setIsReadModalOpen(false)} className="btn-ghost p-1.5 sm:p-1.5">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -719,6 +768,7 @@ export default function AdminPage() {
                 srcDoc={selectedReport.content}
                 className="w-full h-full border-none bg-white"
                 title={selectedReport.title}
+                sandbox="allow-scripts allow-same-origin"
               />
             </div>
           </div>

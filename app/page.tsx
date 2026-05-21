@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, ArrowRight, X, Calendar, Tag } from 'lucide-react'
+import { Search, ArrowRight, X, Calendar, Tag, LayoutGrid, List } from 'lucide-react'
 
 interface Report {
   id: string
@@ -20,6 +20,12 @@ const typeLabels = {
   month: '月报',
 }
 
+const typeColors = {
+  day: 'bg-blue-50 text-blue-700 border-blue-200',
+  week: 'bg-green-50 text-green-700 border-green-200',
+  month: 'bg-purple-50 text-purple-700 border-purple-200',
+}
+
 export default function Home() {
   const [reports, setReports] = useState<Report[]>([])
   const [topics, setTopics] = useState<string[]>([])
@@ -29,6 +35,7 @@ export default function Home() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [isReading, setIsReading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'list' | 'card'>('list')
 
   const fetchReports = async () => {
     setLoading(true)
@@ -75,7 +82,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 bg-stone-900 rounded-md flex items-center justify-center">
               <span className="text-white text-xs font-semibold">档</span>
@@ -90,14 +97,40 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-10">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <section className="mb-12 animate-in">
-          <h1 className="text-display text-3xl text-stone-900 mb-3">
-            工作报告
-          </h1>
-          <p className="text-stone-500 text-sm mb-6 max-w-xl">
-            整理和回顾您的工作日报、周报和月报
-          </p>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-display text-2xl sm:text-3xl text-stone-900">
+                工作报告
+              </h1>
+              <p className="text-stone-500 text-xs sm:text-sm mt-1">
+                整理和回顾您的工作日报、周报和月报
+              </p>
+            </div>
+            <div className="flex items-center bg-stone-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-md transition-all duration-200 ${
+                  viewMode === 'list' 
+                    ? 'bg-white text-stone-900 shadow-sm' 
+                    : 'text-stone-500 hover:text-stone-700'
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={`p-1.5 rounded-md transition-all duration-200 ${
+                  viewMode === 'card' 
+                    ? 'bg-white text-stone-900 shadow-sm' 
+                    : 'text-stone-500 hover:text-stone-700'
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
           
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
@@ -165,19 +198,21 @@ export default function Home() {
               </div>
               <p className="text-stone-500 text-sm">暂无匹配的报告</p>
             </div>
-          ) : (
-            <div className="divide-y divide-stone-100 -mx-6">
+          ) : viewMode === 'list' ? (
+            <div className="divide-y divide-stone-100 -mx-4 sm:-mx-6">
               {reports.map((report, index) => (
                 <div
                   key={report.id}
                   onClick={() => handleRead(report.id)}
-                  className="report-item group opacity-0 animate-in px-6"
+                  className="report-item group opacity-0 animate-in px-4 sm:px-6 cursor-pointer"
                   style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'forwards' }}
                 >
                   <div className="flex items-start justify-between gap-3 py-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          typeColors[report.type as keyof typeof typeColors]
+                        }`}>
                           {typeLabels[report.type as keyof typeof typeLabels]}
                         </span>
                         <span className="text-[11px] text-stone-400 flex items-center gap-1">
@@ -196,6 +231,45 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {reports.map((report, index) => (
+                <div
+                  key={report.id}
+                  onClick={() => handleRead(report.id)}
+                  className="opacity-0 animate-in cursor-pointer"
+                  style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'forwards' }}
+                >
+                  <div className={`bg-white border rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
+                    typeColors[report.type as keyof typeof typeColors].split(' ')[0]
+                  } border-stone-200`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                            typeColors[report.type as keyof typeof typeColors]
+                          }`}>
+                            {typeLabels[report.type as keyof typeof typeLabels]}
+                          </span>
+                          <span className="text-[11px] text-stone-500 flex items-center gap-1">
+                            <Tag className="w-2.5 h-2.5" />
+                            {report.topic}
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-stone-800 text-sm line-clamp-2">
+                          {report.title}
+                        </h3>
+                        <p className="text-xs text-stone-400 mt-2 flex items-center gap-1">
+                          <Calendar className="w-2.5 h-2.5" />
+                          {report.createTime.split('T')[0]}
+                        </p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-stone-400 flex-shrink-0 mt-0.5 group-hover:text-stone-600" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </section>
       </main>
@@ -207,7 +281,7 @@ export default function Home() {
             onClick={closeModal}
           />
           <div className={`fixed inset-0 z-50 flex flex-col bg-white transition-all duration-300 ${isReading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-stone-100">
               <div className="flex-1 min-w-0">
                 <h2 className="font-medium text-stone-900 text-sm truncate">{selectedReport.title}</h2>
                 <p className="text-[11px] text-stone-500 mt-0.5">
@@ -226,6 +300,7 @@ export default function Home() {
                 srcDoc={selectedReport.content}
                 className="w-full h-full border-none bg-white"
                 title={selectedReport.title}
+                sandbox="allow-scripts allow-same-origin"
               />
             </div>
           </div>
