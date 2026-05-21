@@ -9,7 +9,7 @@ export async function saveFile(type: string, filename: string, content: string):
   
   try {
     const result = await put(blobPath, content, {
-      access: 'public',
+      access: 'private',
       contentType: 'text/html',
     });
     
@@ -25,7 +25,7 @@ export async function readFile(filePath: string): Promise<string> {
   console.log('[Storage] Reading file:', filePath);
   
   try {
-    const result = await get(filePath, { access: 'public' });
+    const result = await get(filePath, { access: 'private' });
     if (!result || !result.stream) {
       throw new Error('File not found');
     }
