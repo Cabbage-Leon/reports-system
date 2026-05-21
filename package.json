@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "dotenv -e .env.production -- prisma generate && dotenv -e .env.production -- prisma db push && dotenv -e .env.production -- next build",
+    "dev": "dotenv -e .env -- next dev",
+    "build": "node scripts/build.js",
     "start": "next start",
     "lint": "next lint",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:push": "dotenv -e .env -- prisma db push",
+    "db:generate": "dotenv -e .env -- prisma generate",
+    "db:studio": "dotenv -e .env -- prisma studio"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
