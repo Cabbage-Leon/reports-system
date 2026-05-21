@@ -93,6 +93,8 @@ export default function AdminPage() {
     appSecret: '',
     folderToken: '',
     syncTime: '09:00',
+    syncRange: 'today',
+    syncDays: '1',
     reportType: 'day',
     topic: '飞书同步',
     enabled: true,
@@ -175,6 +177,8 @@ export default function AdminPage() {
         appSecret: '',
         folderToken: '',
         syncTime: '09:00',
+        syncRange: 'today',
+        syncDays: '1',
         reportType: 'day',
         topic: '飞书同步',
         enabled: true,
@@ -201,6 +205,8 @@ export default function AdminPage() {
         appSecret: '',
         folderToken: '',
         syncTime: '09:00',
+        syncRange: 'today',
+        syncDays: '1',
         reportType: 'day',
         topic: '飞书同步',
         enabled: true,
@@ -257,6 +263,8 @@ export default function AdminPage() {
       appSecret: config.appSecret,
       folderToken: config.folderToken || '',
       syncTime: config.syncTime,
+      syncRange: (config as any).syncRange || 'today',
+      syncDays: String((config as any).syncDays || 1),
       reportType: config.reportType,
       topic: config.topic,
       enabled: config.enabled,
@@ -271,6 +279,8 @@ export default function AdminPage() {
       appSecret: '',
       folderToken: '',
       syncTime: '09:00',
+      syncRange: 'today',
+      syncDays: '1',
       reportType: 'day',
       topic: '飞书同步',
       enabled: true,
@@ -856,10 +866,15 @@ export default function AdminPage() {
                         <p className="text-xs text-stone-500 mb-2">
                           主题: {config.topic}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-stone-400">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-stone-400">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             同步时间: {config.syncTime}
+                          </span>
+                          <span className="flex items-center gap-1 bg-stone-100 px-2 py-0.5 rounded">
+                            {(config as any).syncRange === 'today' ? '当天' : 
+                             (config as any).syncRange === 'this_week' ? '本周' : 
+                             `近${(config as any).syncDays || 1}天`}
                           </span>
                           {config.lastSyncTime && (
                             <span className="flex items-center gap-1">
@@ -1209,6 +1224,29 @@ export default function AdminPage() {
                     <option value="month">月报</option>
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">同步范围</label>
+                <select
+                  value={syncForm.syncRange}
+                  onChange={(e) => setSyncForm({ ...syncForm, syncRange: e.target.value })}
+                  className="input-field text-sm mb-2"
+                >
+                  <option value="today">当天</option>
+                  <option value="this_week">本周</option>
+                  <option value="custom">自定义天数</option>
+                </select>
+                {syncForm.syncRange === 'custom' && (
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={syncForm.syncDays}
+                    onChange={(e) => setSyncForm({ ...syncForm, syncDays: e.target.value })}
+                    placeholder="天数"
+                    className="input-field text-sm"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-stone-700 mb-1.5">主题分类</label>

@@ -3,6 +3,39 @@ import { FeishuClient } from '@/lib/feishu';
 import { saveFile, generateFilename } from '@/lib/storage';
 
 export class SyncService {
+  // 计算日期范围的起始日期
+  private getStartDate(syncRange: string, syncDays: number): Date {
+    const now = new Date();
+    let startDate = new Date(now);
+
+    if (syncRange === 'today') {
+      // 今天
+      startDate.setHours(0, 0, 0, 0);
+    } else if (syncRange === 'this_week') {
+      // 本周一
+      const day = startDate.getDay();
+      const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+      startDate = new Date(startDate.setDate(diff));
+      startDate.setHours(0, 0, 0, 0);
+    } else if (syncRange === 'custom') {
+      // 自定义天数
+      startDate.setDate(startDate.getDate() - syncDays + 1);
+      startDate.setHours(0, 0, 0, 0);
+    }
+
+    return startDate;
+  }
+
+  // 检查文件是否在同步范围内
+  private isFileInRange(fileUpdateTime: string, startDate: Date): boolean {
+    const fileDate = new Date(fileUpdateTime);
+    const startOfDay = new Date(startDate);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return fileDate >= startOfDay && fileDate <= endOfDay;
+  }
+
   async syncFeishuDocuments(configId: string): Promise<{
     success: number;
     failed: number;
@@ -29,16 +62,15 @@ export class SyncService {
       // 获取飞书文件列表
       const files = await feishuClient.listFiles(config.folderToken || undefined);
       
-      // 获取今天的日期字符串
-      const today = new Date().toISOString().split('T')[0];
+      // 计算起始日期
+      const startDate = this.getStartDate(config.syncRange, config.syncDays);
       
-      // 过滤今天更新的文档
-      const todayFiles = files.filter(file => {
-        const updateDate = new Date(file.updateTime).toISOString().split('T')[0];
-        return updateDate === today;
+      // 过滤时间范围内的文档
+      const filteredFiles = files.filter(file => {
+        return this.isFileInRange(file.updateTime, startDate);
       });
 
-      for (const file of todayFiles) {
+      for (const file of filteredFiles) {
         try {
           // 检查文档已存在则跳过
           const existingReport = await prisma.report.findFirst({

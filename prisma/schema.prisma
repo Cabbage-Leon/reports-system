@@ -33,15 +33,17 @@ model User {
 }
 
 model FeishuSyncConfig {
-  id           String   @id @default(cuid())
-  enabled      Boolean  @default(true)
-  appId        String
-  appSecret    String
-  folderToken  String?  // 飞书文件夹 token
-  syncTime     String   @default("09:00") // 同步时间，格式 "HH:MM"
-  reportType   String   @default("day") // 同步的报告类型
-  topic        String   @default("飞书同步") // 同步的报告主题
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  lastSyncTime DateTime?
+  id              String   @id @default(cuid())
+  enabled         Boolean  @default(true)
+  appId           String
+  appSecret       String
+  folderToken     String?  // 飞书文件夹 token
+  syncTime        String   @default("09:00") // 同步时间，格式 "HH:MM"
+  syncRange       String   @default("today") // 同步范围: today, this_week, custom
+  syncDays        Int      @default(1) // 自定义同步范围的天数
+  reportType      String   @default("day") // 同步的报告类型
+  topic           String   @default("飞书同步") // 同步的报告主题
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastSyncTime    DateTime?
 }

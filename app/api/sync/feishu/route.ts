@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   try {
     if (action === 'create') {
-      const { appId, appSecret, folderToken, syncTime, reportType, topic, enabled } = configData;
+      const { appId, appSecret, folderToken, syncTime, syncRange, syncDays, reportType, topic, enabled } = configData;
 
       if (!appId || !appSecret) {
         return NextResponse.json({ error: 'appId and appSecret are required' }, { status: 400 });
@@ -27,6 +27,8 @@ export async function POST(request: Request) {
           appSecret,
           folderToken: folderToken || null,
           syncTime: syncTime || '09:00',
+          syncRange: syncRange || 'today',
+          syncDays: syncDays ? parseInt(syncDays) : 1,
           reportType: reportType || 'day',
           topic: topic || '飞书同步',
           enabled: enabled !== undefined ? enabled : true,
