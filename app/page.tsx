@@ -59,10 +59,12 @@ export default function Home() {
   useEffect(() => {
     fetchReports()
     fetchTopics()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     fetchReports()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, activeTopic, keyword])
 
   const handleRead = async (id: string) => {
