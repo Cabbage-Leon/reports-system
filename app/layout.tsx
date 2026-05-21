@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import SessionWrapper from '@/components/SessionWrapper'
+import { VersionBadge } from '@/components/VersionBadge'
 
 export const metadata: Metadata = {
   title: '个人报告归档',
@@ -18,6 +19,7 @@ export default function RootLayout({
         <SessionWrapper>
           {children}
         </SessionWrapper>
+        <VersionBadge />
       </body>
     </html>
   )

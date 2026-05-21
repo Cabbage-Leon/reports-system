@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
     let filePath: string
     try {
-      filePath = saveFile(type, filename, content)
+      filePath = await saveFile(type, filename, content)
       console.log('[Upload API] File saved successfully:', filePath)
     } catch (saveError) {
       console.error('[Upload API] Failed to save file:', saveError)

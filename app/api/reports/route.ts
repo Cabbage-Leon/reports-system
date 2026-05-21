@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
   const typeText = type === 'day' ? '日报' : type === 'week' ? '周报' : '月报'
   const filename = generateFilename(title)
-  const filePath = saveFile(type, filename, content)
+  const filePath = await saveFile(type, filename, content)
 
   const report = await prisma.report.create({
     data: {

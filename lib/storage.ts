@@ -1,64 +1,70 @@
-import fs from 'fs'
-import path from 'path'
+import { put, get, del, list } from '@vercel/blob';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
+const BLOB_STORE_NAME = 'reports-system';
 
-export function ensureUploadDir(type: string): string {
-  const typeDir = path.join(UPLOAD_DIR, type)
-  console.log('[Storage] Ensuring upload directory:', typeDir)
-  console.log('[Storage] UPLOAD_DIR exists:', fs.existsSync(UPLOAD_DIR))
+export async function saveFile(type: string, filename: string, content: string): Promise<string> {
+  console.log('[Storage] Saving file to Vercel Blob:', { type, filename, contentLength: content.length });
+  
+  const blobPath = `${type}/${filename}`;
   
   try {
-    if (!fs.existsSync(typeDir)) {
-      console.log('[Storage] Creating directory:', typeDir)
-      fs.mkdirSync(typeDir, { recursive: true })
-      console.log('[Storage] Directory created successfully')
+    const result = await put(blobPath, content, {
+      access: 'public',
+      contentType: 'text/html',
+    });
+    
+    console.log('[Storage] File saved successfully:', result.url);
+    return result.url;
+  } catch (error) {
+    console.error('[Storage] Failed to save file:', filename, error);
+    throw error;
+  }
+}
+
+export async function readFile(filePath: string): Promise<string> {
+  console.log('[Storage] Reading file:', filePath);
+  
+  try {
+    const result = await get(filePath, { access: 'public' });
+    if (!result || !result.stream) {
+      throw new Error('File not found');
     }
-    return typeDir
+    const buffer = await new Response(result.stream).arrayBuffer();
+    return Buffer.from(buffer).toString('utf-8');
   } catch (error) {
-    console.error('[Storage] Failed to create directory:', typeDir, error)
-    throw error
+    console.error('[Storage] Failed to read file:', filePath, error);
+    throw error;
   }
 }
 
-export function saveFile(type: string, filename: string, content: string): string {
-  console.log('[Storage] Saving file:', { type, filename, contentLength: content.length })
+export async function deleteFile(filePath: string): Promise<void> {
+  console.log('[Storage] Deleting file:', filePath);
   
   try {
-    const dir = ensureUploadDir(type)
-    const filePath = path.join(dir, filename)
-    console.log('[Storage] File path:', filePath)
-    console.log('[Storage] Writing file...')
-    
-    fs.writeFileSync(filePath, content)
-    console.log('[Storage] File saved successfully:', filePath)
-    
-    const stats = fs.statSync(filePath)
-    console.log('[Storage] File stats:', { size: stats.size, createdAt: stats.birthtime })
-    
-    return filePath
+    await del(filePath);
+    console.log('[Storage] File deleted successfully');
   } catch (error) {
-    console.error('[Storage] Failed to save file:', filename, error)
-    throw error
+    console.error('[Storage] Failed to delete file:', filePath, error);
+    throw error;
   }
 }
 
-export function readFile(filePath: string): string {
-  console.log('[Storage] Reading file:', filePath)
-  return fs.readFileSync(filePath, 'utf-8')
-}
-
-export function deleteFile(filePath: string): void {
-  console.log('[Storage] Deleting file:', filePath)
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath)
-    console.log('[Storage] File deleted successfully')
+export async function listFiles(type?: string): Promise<string[]> {
+  console.log('[Storage] Listing files:', type);
+  
+  try {
+    const prefix = type ? `${type}/` : '';
+    const result = await list({ prefix });
+    return result.blobs.map(blob => blob.url);
+  } catch (error) {
+    console.error('[Storage] Failed to list files:', error);
+    throw error;
   }
 }
 
 export function generateFilename(title: string): string {
-  const sanitizedTitle = title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')
-  const filename = `${Date.now()}_${sanitizedTitle}.html`
-  console.log('[Storage] Generated filename:', filename)
-  return filename
+  const sanitizedTitle = title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+  const filename = `${Date.now()}_${sanitizedTitle}.html`;
+  console.log('[Storage] Generated filename:', filename);
+  return filename;
 }
