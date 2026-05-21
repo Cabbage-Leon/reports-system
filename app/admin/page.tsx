@@ -173,8 +173,7 @@ export default function AdminPage() {
       return
     }
 
-    const formData = { ...syncForm }
-    delete formData.customFileType
+    const { customFileType, ...formData } = syncForm
 
     const res = await fetch('/api/sync/feishu', {
       method: 'POST',
@@ -206,8 +205,7 @@ export default function AdminPage() {
   }
 
   const handleUpdateConfig = async (id: string) => {
-    const formData = { ...syncForm }
-    delete formData.customFileType
+    const { customFileType, ...formData } = syncForm
 
     const res = await fetch('/api/sync/feishu', {
       method: 'PUT',
