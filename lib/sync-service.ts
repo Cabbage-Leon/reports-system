@@ -49,7 +49,7 @@ export class SyncService {
           });
 
           if (existingReport) {
-            console.log(`Document already synced, skipping:', file.title);
+            console.log(`Document already synced, skipping: ${file.title}`);
             continue;
           }
 
