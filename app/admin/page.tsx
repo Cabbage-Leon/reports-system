@@ -81,6 +81,7 @@ export default function AdminPage() {
   const [isReadModalOpen, setIsReadModalOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [currentView, setCurrentView] = useState<'reports' | 'sync'>('reports')
+  const [loading, setLoading] = useState(true)
 
   const [feishuConfigs, setFeishuConfigs] = useState<FeishuSyncConfig[]>([])
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false)
@@ -121,9 +122,11 @@ export default function AdminPage() {
   }, [status, router])
 
   const refreshData = async () => {
+    setLoading(true)
     await fetchReports()
     await fetchTopics()
     await fetchStats()
+    setLoading(false)
   }
 
   const fetchReports = async () => {
@@ -150,11 +153,13 @@ export default function AdminPage() {
   }
 
   const fetchFeishuConfigs = async () => {
+    setLoading(true)
     const res = await fetch('/api/sync/feishu')
     if (res.ok) {
       const data = await res.json()
       setFeishuConfigs(data)
     }
+    setLoading(false)
   }
 
   const handleCreateConfig = async () => {
@@ -695,7 +700,11 @@ export default function AdminPage() {
         </aside>
 
         <main className={`flex-1 min-h-[calc(100vh-56px)] transition-all duration-300 ${sidebarOpen ? 'lg:ml-0' : ''}`}>
-          {currentView === 'reports' ? (
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 text-stone-400 animate-spin" />
+            </div>
+          ) : currentView === 'reports' ? (
           <div className="p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="flex-1 relative">

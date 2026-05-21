@@ -101,9 +101,14 @@ export async function PUT(request: Request) {
   }
 
   try {
+    const updateData = { ...data };
+    if (updateData.syncDays !== undefined) {
+      updateData.syncDays = parseInt(updateData.syncDays as string, 10);
+    }
+
     const config = await prisma.feishuSyncConfig.update({
       where: { id },
-      data,
+      data: updateData,
     });
     return NextResponse.json(config);
   } catch (error) {
