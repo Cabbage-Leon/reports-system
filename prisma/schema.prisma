@@ -16,6 +16,9 @@ model Report {
   filePath    String
   createTime  DateTime @default(now())
   updateTime  DateTime @updatedAt
+  source      String?  @default("manual") // manual, feishu, api
+  sourceId    String?  // 源文档 ID（飞书文档 ID 或其他来源 ID）
+  syncTime    DateTime?
 }
 
 model User {
@@ -27,4 +30,18 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model FeishuSyncConfig {
+  id           String   @id @default(cuid())
+  enabled      Boolean  @default(true)
+  appId        String
+  appSecret    String
+  folderToken  String?  // 飞书文件夹 token
+  syncTime     String   @default("09:00") // 同步时间，格式 "HH:MM"
+  reportType   String   @default("day") // 同步的报告类型
+  topic        String   @default("飞书同步") // 同步的报告主题
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastSyncTime DateTime?
 }

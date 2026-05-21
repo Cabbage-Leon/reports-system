@@ -1,0 +1,178 @@
+{
+  "name": "report-system",
+  "version": "1.0.0",
+  "description": "报告管理系统 TRAE Skill - 支持报告的创建、查询、搜索、更新和删除，以及飞书文档同步功能",
+  "author": "Report System Team",
+  "tools": [
+    {
+      "name": "list_reports",
+      "description": "获取报告列表，支持按类型和主题筛选",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "报告类型：day(日报)、week(周报)、month(月报)、all(全部)",
+            "enum": ["day", "week", "month", "all"]
+          },
+          "topic": {
+            "type": "string",
+            "description": "报告主题"
+          },
+          "limit": {
+            "type": "number",
+            "description": "返回数量限制，默认50",
+            "default": 50
+          },
+          "offset": {
+            "type": "number",
+            "description": "偏移量，用于分页，默认0",
+            "default": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "get_report",
+      "description": "获取单个报告的详细信息",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "报告ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "create_report",
+      "description": "创建新的报告",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "报告标题"
+          },
+          "type": {
+            "type": "string",
+            "description": "报告类型：day(日报)、week(周报)、month(月报)",
+            "enum": ["day", "week", "month"]
+          },
+          "topic": {
+            "type": "string",
+            "description": "报告主题"
+          },
+          "content": {
+            "type": "string",
+            "description": "报告内容（HTML格式）"
+          },
+          "source": {
+            "type": "string",
+            "description": "来源：manual(手动)、feishu(飞书)、api(API)",
+            "default": "api"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "源文档ID"
+          }
+        },
+        "required": ["title", "type", "topic", "content"]
+      }
+    },
+    {
+      "name": "update_report",
+      "description": "更新现有报告",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "报告ID"
+          },
+          "title": {
+            "type": "string",
+            "description": "报告标题"
+          },
+          "type": {
+            "type": "string",
+            "description": "报告类型：day(日报)、week(周报)、month(月报)",
+            "enum": ["day", "week", "month"]
+          },
+          "topic": {
+            "type": "string",
+            "description": "报告主题"
+          },
+          "content": {
+            "type": "string",
+            "description": "报告内容（HTML格式）"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "delete_report",
+      "description": "删除报告",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "报告ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "read_report_content",
+      "description": "读取报告的完整内容",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "报告ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "search_reports",
+      "description": "搜索报告，支持关键词、类型和主题筛选",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string",
+            "description": "搜索关键词"
+          },
+          "type": {
+            "type": "string",
+            "description": "报告类型：day(日报)、week(周报)、month(月报)、all(全部)",
+            "enum": ["day", "week", "month", "all"]
+          },
+          "topic": {
+            "type": "string",
+            "description": "报告主题"
+          },
+          "limit": {
+            "type": "number",
+            "description": "返回数量限制，默认50",
+            "default": 50
+          }
+        }
+      }
+    }
+  ],
+  "api": {
+    "baseUrl": "http://localhost:3000/api/mcp",
+    "endpoints": {
+      "reports": "/reports"
+    }
+  }
+}
