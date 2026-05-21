@@ -1,13 +1,15 @@
 import { put, get, del, list } from '@vercel/blob';
 
+const BLOB_STORE_NAME = 'reports-system';
+
 export async function saveFile(type: string, filename: string, content: string): Promise<string> {
-  console.log('[Storage] Saving file to Vercel Blob (PRIVATE access):', { type, filename, contentLength: content.length });
+  console.log('[Storage] Saving file to Vercel Blob:', { type, filename, contentLength: content.length });
   
   const blobPath = `${type}/${filename}`;
   
   try {
     const result = await put(blobPath, content, {
-      access: 'private',  // 使用私有访问模式
+      access: 'public',
       contentType: 'text/html',
     });
     
@@ -23,7 +25,7 @@ export async function readFile(filePath: string): Promise<string> {
   console.log('[Storage] Reading file:', filePath);
   
   try {
-    const result = await get(filePath, { access: 'private' }); // 私有访问
+    const result = await get(filePath, { access: 'public' });
     if (!result || !result.stream) {
       throw new Error('File not found');
     }
