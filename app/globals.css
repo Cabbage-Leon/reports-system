@@ -48,15 +48,7 @@
   }
   
   .report-item {
-    @apply py-5 border-b border-stone-100 last:border-0 group cursor-pointer;
-  }
-  
-  .report-item:hover .report-title {
-    @apply text-stone-900;
-  }
-  
-  .report-item:hover .report-arrow {
-    @apply opacity-100 translate-x-0;
+    @apply py-5 border-b border-stone-100 last:border-0 cursor-pointer;
   }
   
   .report-title {

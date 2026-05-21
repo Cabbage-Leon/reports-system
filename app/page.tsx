@@ -183,13 +183,13 @@ export default function Home() {
                           {report.topic}
                         </span>
                       </div>
-                      <h3 className="report-title">{report.title}</h3>
+                      <h3 className="report-title group-hover:text-stone-900">{report.title}</h3>
                       <p className="report-meta flex items-center gap-1 mt-1">
                         <Calendar className="w-3 h-3" />
                         {report.createTime.split('T')[0]}
                       </p>
                     </div>
-                    <ArrowRight className="report-arrow w-5 h-5 flex-shrink-0 mt-1" />
+                    <ArrowRight className="report-arrow group-hover:opacity-100 group-hover:translate-x-0 w-5 h-5 flex-shrink-0 mt-1" />
                   </div>
                 </div>
               ))}
