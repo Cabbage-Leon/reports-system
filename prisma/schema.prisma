@@ -41,6 +41,7 @@ model FeishuSyncConfig {
   syncTime        String   @default("09:00") // 同步时间，格式 "HH:MM"
   syncRange       String   @default("today") // 同步范围: today, this_week, custom
   syncDays        Int      @default(1) // 自定义同步范围的天数
+  fileTypes       String[] @default(["html", "md"]) // 允许的文件类型，如 ["html", "md", "docx"]
   reportType      String   @default("day") // 同步的报告类型
   topic           String   @default("飞书同步") // 同步的报告主题
   createdAt       DateTime @default(now())

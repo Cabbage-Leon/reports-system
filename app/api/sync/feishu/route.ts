@@ -15,10 +15,19 @@ export async function POST(request: Request) {
 
   try {
     if (action === 'create') {
-      const { appId, appSecret, folderToken, syncTime, syncRange, syncDays, reportType, topic, enabled } = configData;
+      const { appId, appSecret, folderToken, syncTime, syncRange, syncDays, fileTypes, reportType, topic, enabled } = configData;
 
       if (!appId || !appSecret) {
         return NextResponse.json({ error: 'appId and appSecret are required' }, { status: 400 });
+      }
+
+      let parsedFileTypes: string[] = ['html', 'md'];
+      if (fileTypes) {
+        if (Array.isArray(fileTypes)) {
+          parsedFileTypes = fileTypes.filter(t => t && typeof t === 'string');
+        } else if (typeof fileTypes === 'string') {
+          parsedFileTypes = fileTypes.split(',').map(t => t.trim()).filter(t => t);
+        }
       }
 
       const config = await prisma.feishuSyncConfig.create({
@@ -29,6 +38,7 @@ export async function POST(request: Request) {
           syncTime: syncTime || '09:00',
           syncRange: syncRange || 'today',
           syncDays: syncDays ? parseInt(syncDays) : 1,
+          fileTypes: parsedFileTypes.length > 0 ? parsedFileTypes : ['html', 'md'],
           reportType: reportType || 'day',
           topic: topic || '飞书同步',
           enabled: enabled !== undefined ? enabled : true,

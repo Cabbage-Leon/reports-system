@@ -45,6 +45,9 @@ interface FeishuSyncConfig {
   appSecret: string
   folderToken: string | null
   syncTime: string
+  syncRange: string
+  syncDays: number
+  fileTypes: string[]
   reportType: string
   topic: string
   createdAt: string
@@ -96,6 +99,8 @@ export default function AdminPage() {
     syncTime: '09:00',
     syncRange: 'today',
     syncDays: '1',
+    fileTypes: ['html', 'md'],
+    customFileType: '',
     reportType: 'day',
     topic: '飞书同步',
     enabled: true,
@@ -168,10 +173,13 @@ export default function AdminPage() {
       return
     }
 
+    const formData = { ...syncForm }
+    delete formData.customFileType
+
     const res = await fetch('/api/sync/feishu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create', ...syncForm }),
+      body: JSON.stringify({ action: 'create', ...formData }),
     })
 
     if (res.ok) {
@@ -184,6 +192,8 @@ export default function AdminPage() {
         syncTime: '09:00',
         syncRange: 'today',
         syncDays: '1',
+        fileTypes: ['html', 'md'],
+        customFileType: '',
         reportType: 'day',
         topic: '飞书同步',
         enabled: true,
@@ -196,10 +206,13 @@ export default function AdminPage() {
   }
 
   const handleUpdateConfig = async (id: string) => {
+    const formData = { ...syncForm }
+    delete formData.customFileType
+
     const res = await fetch('/api/sync/feishu', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, ...syncForm }),
+      body: JSON.stringify({ id, ...formData }),
     })
 
     if (res.ok) {
@@ -212,6 +225,8 @@ export default function AdminPage() {
         syncTime: '09:00',
         syncRange: 'today',
         syncDays: '1',
+        fileTypes: ['html', 'md'],
+        customFileType: '',
         reportType: 'day',
         topic: '飞书同步',
         enabled: true,
@@ -270,6 +285,8 @@ export default function AdminPage() {
       syncTime: config.syncTime,
       syncRange: (config as any).syncRange || 'today',
       syncDays: String((config as any).syncDays || 1),
+      fileTypes: (config as any).fileTypes || ['html', 'md'],
+      customFileType: '',
       reportType: config.reportType,
       topic: config.topic,
       enabled: config.enabled,
@@ -286,6 +303,8 @@ export default function AdminPage() {
       syncTime: '09:00',
       syncRange: 'today',
       syncDays: '1',
+      fileTypes: ['html', 'md'],
+      customFileType: '',
       reportType: 'day',
       topic: '飞书同步',
       enabled: true,
@@ -885,6 +904,9 @@ export default function AdminPage() {
                              (config as any).syncRange === 'this_week' ? '本周' : 
                              `近${(config as any).syncDays || 1}天`}
                           </span>
+                          <span className="flex items-center gap-1">
+                            文件类型: {(config as any).fileTypes?.join(', ') || 'html, md'}
+                          </span>
                           {config.lastSyncTime && (
                             <span className="flex items-center gap-1">
                               <CheckCircle className="w-3 h-3 text-green-500" />
@@ -1255,6 +1277,65 @@ export default function AdminPage() {
                     placeholder="天数"
                     className="input-field text-sm"
                   />
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1.5">文件类型（多选）</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {['html', 'md', 'docx', 'doc', 'pdf', 'txt'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        const newTypes = syncForm.fileTypes.includes(type)
+                          ? syncForm.fileTypes.filter(t => t !== type)
+                          : [...syncForm.fileTypes, type]
+                        setSyncForm({ ...syncForm, fileTypes: newTypes })
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        syncForm.fileTypes.includes(type)
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={syncForm.customFileType}
+                    onChange={(e) => setSyncForm({ ...syncForm, customFileType: e.target.value })}
+                    placeholder="输入自定义后缀（如 xml）"
+                    className="input-field text-sm flex-1"
+                  />
+                  <button
+                    onClick={() => {
+                      if (syncForm.customFileType.trim() && !syncForm.fileTypes.includes(syncForm.customFileType.trim())) {
+                        setSyncForm({
+                          ...syncForm,
+                          fileTypes: [...syncForm.fileTypes, syncForm.customFileType.trim()],
+                          customFileType: ''
+                        })
+                      }
+                    }}
+                    className="btn-primary text-sm px-4"
+                  >
+                    添加
+                  </button>
+                </div>
+                {syncForm.fileTypes.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span className="text-xs text-stone-500">已选：</span>
+                    {syncForm.fileTypes.map((type, idx) => (
+                      <span key={idx} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded mr-1 flex items-center gap-1">
+                        {type}
+                        <button onClick={() => setSyncForm({ ...syncForm, fileTypes: syncForm.fileTypes.filter(t => t !== type) })}>
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
               <div>

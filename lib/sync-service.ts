@@ -36,6 +36,35 @@ export class SyncService {
     return fileDate >= startOfDay && fileDate <= endOfDay;
   }
 
+  // 检查文件类型是否匹配（忽略大小写）
+  private isFileTypeMatch(fileName: string, allowedTypes: string[]): boolean {
+    if (!fileName || allowedTypes.length === 0) {
+      return true;
+    }
+
+    const lowerFileName = fileName.toLowerCase();
+    
+    for (const type of allowedTypes) {
+      const lowerType = type.toLowerCase().trim();
+      if (lowerType === '') continue;
+      
+      // 检查文件名是否以指定后缀结尾
+      if (lowerFileName.endsWith(`.${lowerType}`)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // 获取文件扩展名（忽略大小写）
+  private getFileExtension(fileName: string): string {
+    if (!fileName) return '';
+    const lastDotIndex = fileName.lastIndexOf('.');
+    if (lastDotIndex === -1) return '';
+    return fileName.substring(lastDotIndex + 1).toLowerCase();
+  }
+
   async syncFeishuDocuments(configId: string): Promise<{
     success: number;
     failed: number;
@@ -65,23 +94,41 @@ export class SyncService {
       // 计算起始日期
       const startDate = this.getStartDate(config.syncRange, config.syncDays);
       
-      // 过滤时间范围内的文档
+      // 获取允许的文件类型
+      const allowedFileTypes = config.fileTypes || ['html', 'md'];
+      
+      // 过滤时间范围和文件类型的文档
       const filteredFiles = files.filter(file => {
-        return this.isFileInRange(file.updateTime, startDate);
+        const inRange = this.isFileInRange(file.updateTime, startDate);
+        const typeMatch = this.isFileTypeMatch(file.title, allowedFileTypes);
+        return inRange && typeMatch;
       });
+
+      // 获取已同步的文件 token 列表（用于去重）
+      const existingTokens = await prisma.report.findMany({
+        where: { source: 'feishu' },
+        select: { sourceId: true },
+      });
+      const syncedTokens = new Set(existingTokens.map(r => r.sourceId));
 
       for (const file of filteredFiles) {
         try {
-          // 检查文档已存在则跳过
-          const existingReport = await prisma.report.findFirst({
+          // 检查文档已存在则跳过（去重）
+          if (syncedTokens.has(file.token)) {
+            console.log(`Document already synced (duplicate), skipping: ${file.title}`);
+            continue;
+          }
+
+          // 检查是否已同步过相同文件名（另一种去重方式）
+          const existingByTitle = await prisma.report.findFirst({
             where: {
+              title: file.title,
               source: 'feishu',
-              sourceId: file.token,
             },
           });
 
-          if (existingReport) {
-            console.log(`Document already synced, skipping: ${file.title}`);
+          if (existingByTitle) {
+            console.log(`Document with same title already exists, skipping: ${file.title}`);
             continue;
           }
 
