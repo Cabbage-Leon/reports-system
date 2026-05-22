@@ -1484,6 +1484,6 @@ export default function AdminPage() {
         </>
       )}
     </div>
-    <ToastContainer errors={errors} onRemove={removeError} />
-  )
-}
+  </div>
+  <ToastContainer errors={errors} onRemove={removeError} />
+)
