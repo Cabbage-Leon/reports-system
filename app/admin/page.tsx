@@ -103,6 +103,8 @@ export default function AdminPage() {
     syncTime: '09:00',
     syncRange: 'today',
     syncDays: '1',
+    customStartDate: '',
+    customEndDate: '',
     fileTypes: ['html', 'md'],
     customFileType: '',
     reportType: 'day',
@@ -177,6 +179,13 @@ export default function AdminPage() {
       return
     }
 
+    if (syncForm.syncRange === 'date_range') {
+      if (!syncForm.customStartDate || !syncForm.customEndDate) {
+        alert('请填写自定义时间范围的开始和结束日期')
+        return
+      }
+    }
+
     const { customFileType, ...formData } = syncForm
 
     const res = await fetch('/api/sync/feishu', {
@@ -195,6 +204,8 @@ export default function AdminPage() {
         syncTime: '09:00',
         syncRange: 'today',
         syncDays: '1',
+        customStartDate: '',
+        customEndDate: '',
         fileTypes: ['html', 'md'],
         customFileType: '',
         reportType: 'day',
@@ -209,6 +220,13 @@ export default function AdminPage() {
   }
 
   const handleUpdateConfig = async (id: string) => {
+    if (syncForm.syncRange === 'date_range') {
+      if (!syncForm.customStartDate || !syncForm.customEndDate) {
+        alert('请填写自定义时间范围的开始和结束日期')
+        return
+      }
+    }
+
     const { customFileType, ...formData } = syncForm
 
     const res = await fetch('/api/sync/feishu', {
@@ -227,6 +245,8 @@ export default function AdminPage() {
         syncTime: '09:00',
         syncRange: 'today',
         syncDays: '1',
+        customStartDate: '',
+        customEndDate: '',
         fileTypes: ['html', 'md'],
         customFileType: '',
         reportType: 'day',
@@ -302,6 +322,8 @@ export default function AdminPage() {
       syncTime: config.syncTime,
       syncRange: (config as any).syncRange || 'today',
       syncDays: String((config as any).syncDays || 1),
+      customStartDate: (config as any).customStartDate ? new Date((config as any).customStartDate).toISOString().split('T')[0] : '',
+      customEndDate: (config as any).customEndDate ? new Date((config as any).customEndDate).toISOString().split('T')[0] : '',
       fileTypes: (config as any).fileTypes || ['html', 'md'],
       customFileType: '',
       reportType: config.reportType,
@@ -320,6 +342,8 @@ export default function AdminPage() {
       syncTime: '09:00',
       syncRange: 'today',
       syncDays: '1',
+      customStartDate: '',
+      customEndDate: '',
       fileTypes: ['html', 'md'],
       customFileType: '',
       reportType: 'day',
@@ -932,7 +956,8 @@ export default function AdminPage() {
                           </span>
                           <span className="flex items-center gap-1 bg-stone-100 px-2 py-0.5 rounded">
                             {(config as any).syncRange === 'today' ? '当天' : 
-                             (config as any).syncRange === 'this_week' ? '本周' : 
+                             (config as any).syncRange === 'this_week' ? '本周' :
+                             (config as any).syncRange === 'date_range' ? `${(config as any).customStartDate?.split('T')[0]} 至 ${(config as any).customEndDate?.split('T')[0]}` :
                              `近${(config as any).syncDays || 1}天`}
                           </span>
                           <span className="flex items-center gap-1">
@@ -1318,6 +1343,7 @@ export default function AdminPage() {
                   <option value="today">当天</option>
                   <option value="this_week">本周</option>
                   <option value="custom">自定义天数</option>
+                  <option value="date_range">自定义日期范围</option>
                 </select>
                 {syncForm.syncRange === 'custom' && (
                   <input
@@ -1329,6 +1355,28 @@ export default function AdminPage() {
                     placeholder="天数"
                     className="input-field text-sm"
                   />
+                )}
+                {syncForm.syncRange === 'date_range' && (
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-xs text-stone-600 mb-1">开始日期</label>
+                      <input
+                        type="date"
+                        value={syncForm.customStartDate}
+                        onChange={(e) => setSyncForm({ ...syncForm, customStartDate: e.target.value })}
+                        className="input-field text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-stone-600 mb-1">结束日期</label>
+                      <input
+                        type="date"
+                        value={syncForm.customEndDate}
+                        onChange={(e) => setSyncForm({ ...syncForm, customEndDate: e.target.value })}
+                        className="input-field text-sm"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
               <div>

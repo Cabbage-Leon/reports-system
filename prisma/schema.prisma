@@ -33,21 +33,23 @@ model User {
 }
 
 model FeishuSyncConfig {
-  id              String   @id @default(cuid())
-  enabled         Boolean  @default(true)
+  id              String    @id @default(cuid())
+  enabled         Boolean   @default(true)
   appId           String
   appSecret       String
-  userAccessToken String?  // 用户授权的访问令牌（用于个人空间）
-  refreshToken    String?  // 刷新令牌
+  userAccessToken String?   // 用户授权的访问令牌（用于个人空间）
+  refreshToken    String?   // 刷新令牌
   tokenExpireTime DateTime? // token 过期时间
-  folderToken     String?  // 飞书文件夹 token
-  syncTime        String   @default("09:00") // 同步时间，格式 "HH:MM"
-  syncRange       String   @default("today") // 同步范围: today, this_week, custom
-  syncDays        Int      @default(1) // 自定义同步范围的天数
-  fileTypes       String[] @default(["html", "md"]) // 允许的文件类型，如 ["html", "md", "docx"]
-  reportType      String   @default("day") // 同步的报告类型
-  topic           String   @default("飞书同步") // 同步的报告主题
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  folderToken     String?   // 飞书文件夹 token
+  syncTime        String    @default("09:00") // 同步时间，格式 "HH:MM"
+  syncRange       String    @default("today") // 同步范围: today, this_week, custom, date_range
+  syncDays        Int       @default(1) // 自定义同步范围的天数
+  customStartDate DateTime? // 自定义时间范围的开始日期
+  customEndDate   DateTime? // 自定义时间范围的结束日期
+  fileTypes       String[]  @default(["html", "md"]) // 允许的文件类型，如 ["html", "md", "docx"]
+  reportType      String    @default("day") // 同步的报告类型
+  topic           String    @default("飞书同步") // 同步的报告主题
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   lastSyncTime    DateTime?
 }

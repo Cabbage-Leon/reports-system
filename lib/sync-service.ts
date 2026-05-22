@@ -19,7 +19,7 @@ export class SyncService {
     };
   }
 
-  private getDateRange(range: string, days?: number): { start: Date; end: Date } {
+  private getDateRange(range: string, days?: number, customStartDate?: Date | null, customEndDate?: Date | null): { start: Date; end: Date } {
     const chinaDate = this.getChinaDate();
     let start: Date;
     let end: Date;
@@ -44,6 +44,17 @@ export class SyncService {
           start = new Date(chinaDate.year, chinaDate.month, chinaDate.date);
         }
         end = new Date();
+        break;
+      case 'date_range':
+        if (customStartDate && customEndDate) {
+          start = new Date(customStartDate);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(customEndDate);
+          end.setHours(23, 59, 59, 999);
+        } else {
+          start = new Date(chinaDate.year, chinaDate.month, chinaDate.date);
+          end = new Date(chinaDate.year, chinaDate.month, chinaDate.date, 23, 59, 59, 999);
+        }
         break;
       default:
         start = new Date(chinaDate.year, chinaDate.month, chinaDate.date);
@@ -117,6 +128,8 @@ export class SyncService {
         folderToken: config.folderToken || '(未设置，获取所有文件)',
         syncRange: config.syncRange,
         syncDays: config.syncDays,
+        customStartDate: config.customStartDate,
+        customEndDate: config.customEndDate,
         fileTypes: config.fileTypes,
         hasUserToken: !!accessToken,
       });
@@ -124,7 +137,7 @@ export class SyncService {
       const files = await feishuClient.listFiles(config.folderToken || undefined);
       console.log(`从飞书获取到 ${files.length} 个文件`);
 
-      const dateRange = this.getDateRange(config.syncRange, config.syncDays);
+      const dateRange = this.getDateRange(config.syncRange, config.syncDays, config.customStartDate, config.customEndDate);
       console.log(`同步时间范围: ${dateRange.start.toLocaleString()} 至 ${dateRange.end.toLocaleString()}`);
 
       console.log('文件数据样本 (前3个):', files.slice(0, 3));
