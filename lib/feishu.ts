@@ -75,15 +75,17 @@ export class FeishuClient {
       throw new Error('Missing app id or app secret');
     }
 
+    const tenantAccessToken = await this.getTenantAccessToken();
+    console.log('Got tenant access token successfully');
+
     const response = await fetch('https://open.feishu.cn/open-apis/authen/v1/access_token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tenantAccessToken}`,
       },
       body: JSON.stringify({
         grant_type: 'authorization_code',
-        client_id: this.appId,
-        client_secret: this.appSecret,
         code: code,
         redirect_uri: redirectUri,
       }),
@@ -111,21 +113,24 @@ export class FeishuClient {
     refreshToken: string;
     expireTime: Date;
   }> {
+    const tenantAccessToken = await this.getTenantAccessToken();
+    console.log('Got tenant access token for refresh');
+
     const response = await fetch('https://open.feishu.cn/open-apis/authen/v1/refresh_access_token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tenantAccessToken}`,
       },
       body: JSON.stringify({
         grant_type: 'refresh_token',
-        client_id: this.appId,
-        client_secret: this.appSecret,
         refresh_token: refreshToken,
       }),
     });
 
     const data: FeishuTokenResponse = await response.json();
     if (data.code !== 0) {
+      console.error('Feishu refresh token failed:', data);
       throw new Error(`Failed to refresh token: ${data.msg}`);
     }
 
