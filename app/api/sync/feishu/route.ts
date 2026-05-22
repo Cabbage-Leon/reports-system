@@ -31,19 +31,28 @@ export async function POST(request: Request) {
         }
       }
 
+      const createData: any = {
+        appId,
+        appSecret,
+        folderToken: folderToken || null,
+        syncTime: syncTime || '09:00',
+        syncRange: syncRange || 'today',
+        syncDays: syncDays ? parseInt(syncDays) : 1,
+        fileTypes: parsedFileTypes.length > 0 ? parsedFileTypes : ['html', 'md'],
+        reportType: reportType || 'day',
+        topic: topic || '飞书同步',
+        enabled: enabled !== undefined ? enabled : true,
+      };
+
+      if (configData.customStartDate) {
+        createData.customStartDate = new Date(configData.customStartDate);
+      }
+      if (configData.customEndDate) {
+        createData.customEndDate = new Date(configData.customEndDate);
+      }
+
       const config = await prisma.feishuSyncConfig.create({
-        data: {
-          appId,
-          appSecret,
-          folderToken: folderToken || null,
-          syncTime: syncTime || '09:00',
-          syncRange: syncRange || 'today',
-          syncDays: syncDays ? parseInt(syncDays) : 1,
-          fileTypes: parsedFileTypes.length > 0 ? parsedFileTypes : ['html', 'md'],
-          reportType: reportType || 'day',
-          topic: topic || '飞书同步',
-          enabled: enabled !== undefined ? enabled : true,
-        },
+        data: createData,
       });
 
       return NextResponse.json(config, { status: 201 });
@@ -116,9 +125,16 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const updateData = { ...data };
+    const updateData: any = { ...data };
     if (updateData.syncDays !== undefined) {
       updateData.syncDays = parseInt(updateData.syncDays as string, 10);
+    }
+
+    if (updateData.customStartDate) {
+      updateData.customStartDate = new Date(updateData.customStartDate);
+    }
+    if (updateData.customEndDate) {
+      updateData.customEndDate = new Date(updateData.customEndDate);
     }
 
     const config = await prisma.feishuSyncConfig.update({

@@ -26,6 +26,7 @@ import {
   Loader2,
   Shield,
 } from 'lucide-react'
+import { ToastContainer } from '@/components/ErrorToast'
 
 interface Report {
   id: string
@@ -95,6 +96,15 @@ export default function AdminPage() {
   const [editingConfig, setEditingConfig] = useState<FeishuSyncConfig | null>(null)
   const [syncLoading, setSyncLoading] = useState<string | null>(null)
   const [syncResult, setSyncResult] = useState<{ success: number; failed: number; errors: string[] } | null>(null)
+  const [errors, setErrors] = useState<string[]>([])
+
+  const showError = (message: string) => {
+    setErrors(prev => [...prev, message])
+  }
+
+  const removeError = (index: number) => {
+    setErrors(prev => prev.filter((_, i) => i !== index))
+  }
 
   const [syncForm, setSyncForm] = useState({
     appId: '',
@@ -175,13 +185,13 @@ export default function AdminPage() {
 
   const handleCreateConfig = async () => {
     if (!syncForm.appId || !syncForm.appSecret) {
-      alert('请填写 App ID 和 App Secret')
+      showError('请填写 App ID 和 App Secret')
       return
     }
 
     if (syncForm.syncRange === 'date_range') {
       if (!syncForm.customStartDate || !syncForm.customEndDate) {
-        alert('请填写自定义时间范围的开始和结束日期')
+        showError('请填写自定义时间范围的开始和结束日期')
         return
       }
     }
@@ -215,14 +225,14 @@ export default function AdminPage() {
       fetchFeishuConfigs()
     } else {
       const data = await res.json()
-      alert(data.error || '创建失败')
+      showError(data.error || '创建失败')
     }
   }
 
   const handleUpdateConfig = async (id: string) => {
     if (syncForm.syncRange === 'date_range') {
       if (!syncForm.customStartDate || !syncForm.customEndDate) {
-        alert('请填写自定义时间范围的开始和结束日期')
+        showError('请填写自定义时间范围的开始和结束日期')
         return
       }
     }
@@ -255,7 +265,8 @@ export default function AdminPage() {
       })
       fetchFeishuConfigs()
     } else {
-      alert('更新失败')
+      const data = await res.json()
+      showError(data.error || '更新失败')
     }
   }
 
@@ -1473,5 +1484,6 @@ export default function AdminPage() {
         </>
       )}
     </div>
+    <ToastContainer errors={errors} onRemove={removeError} />
   )
 }
