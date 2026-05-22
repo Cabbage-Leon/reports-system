@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, ArrowRight, X, Calendar, Tag, LayoutGrid, List, FileText } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MultiFormatPreview } from '@/components/MultiFormatPreview'
 
 interface Report {
   id: string
@@ -11,6 +12,7 @@ interface Report {
   typeText: string
   topic: string
   filePath: string
+  fileFormat: string
   createTime: string
   content?: string
 }
@@ -331,11 +333,10 @@ export default function Home() {
                 </button>
               </div>
               <div className="flex-1 overflow-hidden bg-stone-50">
-                <iframe
-                  srcDoc={selectedReport.content}
-                  className="w-full h-full border-none bg-white"
+                <MultiFormatPreview
+                  content={selectedReport.content || ''}
+                  format={selectedReport.fileFormat || 'html'}
                   title={selectedReport.title}
-                  sandbox="allow-scripts allow-same-origin"
                 />
               </div>
             </motion.div>

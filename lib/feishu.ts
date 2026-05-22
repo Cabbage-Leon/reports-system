@@ -279,4 +279,123 @@ export class FeishuClient {
 
     return data.data?.content || '';
   }
+
+  async getFileContent(fileToken: string, fileType: string, fileName?: string): Promise<{ content: string; format: string }> {
+    const token = await this.getAccessToken();
+    const lowerFileName = (fileName || '').toLowerCase();
+
+    // 根据文件名后缀判断格式
+    if (lowerFileName.endsWith('.html') || lowerFileName.endsWith('.htm')) {
+      return this.downloadFileAsText(fileToken, 'html');
+    }
+    
+    if (lowerFileName.endsWith('.md') || lowerFileName.endsWith('.markdown')) {
+      return this.downloadFileAsText(fileToken, 'markdown');
+    }
+    
+    if (lowerFileName.endsWith('.txt')) {
+      return this.downloadFileAsText(fileToken, 'text');
+    }
+    
+    if (lowerFileName.endsWith('.pdf')) {
+      return this.downloadFileAsBase64(fileToken, 'pdf');
+    }
+    
+    if (lowerFileName.endsWith('.docx')) {
+      try {
+        const content = await this.getDocxContent(fileToken);
+        return { content, format: 'markdown' };
+      } catch (error) {
+        console.error(`Failed to get docx content:`, error);
+        return this.downloadFileAsText(fileToken, 'text');
+      }
+    }
+    
+    if (lowerFileName.endsWith('.doc')) {
+      return this.downloadFileAsBase64(fileToken, 'doc');
+    }
+    
+    if (lowerFileName.endsWith('.xlsx') || lowerFileName.endsWith('.xls') || lowerFileName.endsWith('.csv')) {
+      return this.downloadFileAsText(fileToken, 'spreadsheet');
+    }
+
+    // 如果文件名没有后缀，根据飞书文件类型判断
+    switch (fileType) {
+      case 'docx':
+        try {
+          const content = await this.getDocxContent(fileToken);
+          return { content, format: 'markdown' };
+        } catch (error) {
+          console.error(`Failed to get docx content:`, error);
+          return { content: '', format: 'text' };
+        }
+      
+      case 'sheet':
+        return this.downloadFileAsText(fileToken, 'spreadsheet');
+      
+      case 'pdf':
+        return this.downloadFileAsBase64(fileToken, 'pdf');
+      
+      case 'doc':
+        return this.downloadFileAsBase64(fileToken, 'doc');
+      
+      case 'bitable':
+      case 'mindnote':
+        return { content: `不支持预览 ${fileType} 类型的文件`, format: 'text' };
+      
+      case 'file':
+      default:
+        return this.downloadFileAsText(fileToken, 'text');
+    }
+  }
+
+  private async downloadFileAsText(fileToken: string, format: string): Promise<{ content: string; format: string }> {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(
+        `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const text = await response.text();
+      return { content: text, format };
+    } catch (error) {
+      console.error(`Failed to download file as text:`, error);
+      return { content: '', format };
+    }
+  }
+
+  private async downloadFileAsBase64(fileToken: string, format: string): Promise<{ content: string; format: string }> {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(
+        `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      return { content: base64, format };
+    } catch (error) {
+      console.error(`Failed to download file as base64:`, error);
+      return { content: '', format };
+    }
+  }
 }

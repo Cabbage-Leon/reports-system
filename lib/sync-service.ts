@@ -83,6 +83,58 @@ export class SyncService {
     return allowedTypes.some(type => lowerFileName.endsWith(`.${type.toLowerCase()}`));
   }
 
+  private isFeishuFileTypeMatch(fileName: string, fileType: string, allowedTypes: string[]): boolean {
+    if (!allowedTypes || allowedTypes.length === 0) {
+      return true;
+    }
+
+    // 1. 首先根据文件名后缀判断
+    const lowerFileName = fileName.toLowerCase();
+    const fileNameMatch = allowedTypes.some(type => lowerFileName.endsWith(`.${type.toLowerCase()}`));
+    
+    if (fileNameMatch) {
+      return true;
+    }
+
+    // 2. 如果文件名没有后缀，根据飞书文件类型判断
+    const typeMapping: Record<string, string[]> = {
+      'docx': ['docx', 'md'],
+      'sheet': ['xlsx', 'csv'],
+      'bitable': ['bitable'],
+      'doc': ['doc'],
+      'pdf': ['pdf'],
+      'file': allowedTypes,
+    };
+
+    const mappedTypes = typeMapping[fileType] || typeMapping['file'];
+    return mappedTypes.some(type => allowedTypes.includes(type));
+  }
+
+  private getFileFormatFromType(fileType: string, fileName: string): string {
+    const lowerFileName = fileName.toLowerCase();
+    
+    // 根据文件名后缀判断
+    if (lowerFileName.endsWith('.html')) return 'html';
+    if (lowerFileName.endsWith('.md')) return 'markdown';
+    if (lowerFileName.endsWith('.pdf')) return 'pdf';
+    if (lowerFileName.endsWith('.docx')) return 'docx';
+    if (lowerFileName.endsWith('.doc')) return 'doc';
+    if (lowerFileName.endsWith('.txt')) return 'text';
+    if (lowerFileName.endsWith('.xlsx') || lowerFileName.endsWith('.csv')) return 'spreadsheet';
+    
+    // 根据飞书文件类型判断
+    const typeMapping: Record<string, string> = {
+      'docx': 'docx',
+      'sheet': 'spreadsheet',
+      'bitable': 'bitable',
+      'doc': 'doc',
+      'pdf': 'pdf',
+      'file': 'text',
+    };
+    
+    return typeMapping[fileType] || 'text';
+  }
+
   async syncFromFeishu(configId: string): Promise<{
     success: number;
     failed: number;
@@ -160,30 +212,81 @@ export class SyncService {
       }, {} as Record<string, number>);
       console.log('文件类型统计:', fileTypeStats);
 
+      // 查询已同步的文件，结合文件名和文件类型进行去重
       const existingReports = await prisma.report.findMany({
         where: {
           source: 'feishu',
-          sourceId: { in: filteredFiles.map(f => f.token) },
         },
-        select: { sourceId: true },
+        select: { 
+          sourceId: true,
+          sourceTitle: true,
+          sourceFileType: true,
+        },
       });
-      const existingSourceIds = new Set(existingReports.map(r => r.sourceId));
+      
+      // 创建去重集合：key = "title|fileType"
+      const existingKeys = new Set(
+        existingReports
+          .filter(r => r.sourceTitle && r.sourceFileType)
+          .map(r => `${r.sourceTitle}|${r.sourceFileType}`)
+      );
+      
+      // 保留基于 token 的去重（用于兼容旧数据）
+      const existingTokenIds = new Set(
+        existingReports
+          .filter(r => r.sourceId)
+          .map(r => r.sourceId)
+      );
 
       for (const file of filteredFiles) {
         try {
-          if (existingSourceIds.has(file.token)) {
-            console.log(`文档已同步过，跳过: ${file.title}`);
+          // 检查文件名和文件类型组合是否已同步
+          const fileKey = `${file.title}|${file.type}`;
+          if (existingKeys.has(fileKey)) {
+            console.log(`文档已同步过（按文件名+类型），跳过: ${file.title} (type: ${file.type})`);
+            continue;
+          }
+          
+          // 保留基于 token 的去重检查
+          if (existingTokenIds.has(file.token)) {
+            console.log(`文档已同步过（按token），跳过: ${file.title}`);
             continue;
           }
 
-          console.log(`正在同步: ${file.title}`);
+          console.log(`正在同步: ${file.title} (type: ${file.type})`);
 
-          let content = '';
-          if (file.type === 'docx') {
-            content = await feishuClient.getDocxContent(file.token);
-          } else {
-            console.log(`跳过非 docx 类型文件: ${file.title} (type: ${file.type})`);
+          if (!this.isFeishuFileTypeMatch(file.title, file.type, config.fileTypes)) {
+            console.log(`跳过不支持的文件类型: ${file.title} (type: ${file.type})`);
             continue;
+          }
+
+          // 获取文件内容
+          const fileResult = await feishuClient.getFileContent(file.token, file.type, file.title);
+          let { content, format } = fileResult;
+          let fileExtension = '.txt';
+          
+          // 根据格式确定文件扩展名
+          switch (format) {
+            case 'html':
+              fileExtension = '.html';
+              break;
+            case 'markdown':
+              fileExtension = '.md';
+              break;
+            case 'pdf':
+              fileExtension = '.pdf';
+              break;
+            case 'docx':
+              fileExtension = '.docx';
+              break;
+            case 'doc':
+              fileExtension = '.doc';
+              break;
+            case 'spreadsheet':
+              fileExtension = '.csv';
+              break;
+            default:
+              fileExtension = '.txt';
           }
 
           if (!content) {
@@ -191,8 +294,31 @@ export class SyncService {
             continue;
           }
 
-          const fileName = `${file.title}.md`;
-          const filePath = await saveFile('reports', fileName, content, 'text/markdown');
+          const fileName = `${file.title}${fileExtension}`;
+          let contentType = 'text/plain';
+          
+          switch (format) {
+            case 'html':
+              contentType = 'text/html';
+              break;
+            case 'markdown':
+              contentType = 'text/markdown';
+              break;
+            case 'pdf':
+              contentType = 'application/pdf';
+              break;
+            case 'docx':
+              contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+              break;
+            case 'doc':
+              contentType = 'application/msword';
+              break;
+            case 'spreadsheet':
+              contentType = 'text/csv';
+              break;
+          }
+
+          const filePath = await saveFile('reports', fileName, content, contentType);
 
           await prisma.report.create({
             data: {
@@ -201,14 +327,17 @@ export class SyncService {
               typeText: config.reportType === 'day' ? '日报' : config.reportType === 'week' ? '周报' : '月报',
               topic: config.topic,
               filePath: filePath,
+              fileFormat: format,
               source: 'feishu',
               sourceId: file.token,
+              sourceTitle: file.title,
+              sourceFileType: file.type,
               syncTime: new Date(),
             },
           });
 
           success++;
-          console.log(`同步成功: ${file.title}`);
+          console.log(`同步成功: ${file.title} (format: ${format})`);
         } catch (error) {
           failed++;
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';

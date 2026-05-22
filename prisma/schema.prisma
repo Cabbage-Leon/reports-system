@@ -14,10 +14,13 @@ model Report {
   typeText    String
   topic       String
   filePath    String
+  fileFormat  String   @default("html") // 原始文件格式: html, markdown, pdf, docx, doc, txt
   createTime  DateTime @default(now())
   updateTime  DateTime @updatedAt
   source      String?  @default("manual") // manual, feishu, api
   sourceId    String?  // 源文档 ID（飞书文档 ID 或其他来源 ID）
+  sourceTitle String?  // 源文件名（用于去重验证）
+  sourceFileType String? // 源文件类型（用于去重验证）
   syncTime    DateTime?
 }
 
