@@ -45,10 +45,23 @@ export async function POST(request: Request) {
       };
 
       if (configData.customStartDate) {
-        createData.customStartDate = new Date(configData.customStartDate);
+        // 使用更安全的日期解析方式
+        const dateParts = configData.customStartDate.split('-');
+        if (dateParts.length === 3) {
+          const year = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1; // 月份从 0 开始
+          const day = parseInt(dateParts[2], 10);
+          createData.customStartDate = new Date(year, month, day, 0, 0, 0, 0);
+        }
       }
       if (configData.customEndDate) {
-        createData.customEndDate = new Date(configData.customEndDate);
+        const dateParts = configData.customEndDate.split('-');
+        if (dateParts.length === 3) {
+          const year = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1;
+          const day = parseInt(dateParts[2], 10);
+          createData.customEndDate = new Date(year, month, day, 23, 59, 59, 999);
+        }
       }
 
       const config = await prisma.feishuSyncConfig.create({
@@ -131,10 +144,22 @@ export async function PUT(request: Request) {
     }
 
     if (updateData.customStartDate) {
-      updateData.customStartDate = new Date(updateData.customStartDate);
+      const dateParts = updateData.customStartDate.split('-');
+      if (dateParts.length === 3) {
+        const year = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1;
+        const day = parseInt(dateParts[2], 10);
+        updateData.customStartDate = new Date(year, month, day, 0, 0, 0, 0);
+      }
     }
     if (updateData.customEndDate) {
-      updateData.customEndDate = new Date(updateData.customEndDate);
+      const dateParts = updateData.customEndDate.split('-');
+      if (dateParts.length === 3) {
+        const year = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1;
+        const day = parseInt(dateParts[2], 10);
+        updateData.customEndDate = new Date(year, month, day, 23, 59, 59, 999);
+      }
     }
 
     const config = await prisma.feishuSyncConfig.update({
