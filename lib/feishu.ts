@@ -63,6 +63,18 @@ export class FeishuClient {
     refreshToken: string;
     expireTime: Date;
   }> {
+    console.log('FeishuClient exchangeCodeForToken called:', {
+      hasAppId: !!this.appId,
+      hasAppSecret: !!this.appSecret,
+      appIdLength: this.appId?.length,
+      codeLength: code?.length,
+      redirectUri
+    });
+
+    if (!this.appId || !this.appSecret) {
+      throw new Error('Missing app id or app secret');
+    }
+
     const response = await fetch('https://open.feishu.cn/open-apis/authen/v1/access_token', {
       method: 'POST',
       headers: {
@@ -79,6 +91,7 @@ export class FeishuClient {
 
     const data: FeishuTokenResponse = await response.json();
     if (data.code !== 0) {
+      console.error('Feishu exchange code failed:', data);
       throw new Error(`Failed to exchange code: ${data.msg}`);
     }
 

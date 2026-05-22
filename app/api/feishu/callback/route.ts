@@ -7,11 +7,16 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const state = searchParams.get('state');
 
+  console.log('Feishu callback received:', {
+    hasCode: !!code,
+    hasState: !!state,
+    codeLength: code?.length,
+    state
+  });
+
   if (!code || !state) {
-    return NextResponse.json(
-      { error: 'Invalid request, missing code or state' },
-      { status: 400 }
-    );
+    console.error('Invalid request, missing code or state');
+    return NextResponse.redirect(`${request.nextUrl.origin}/admin?auth=error`);
   }
 
   try {
@@ -24,11 +29,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${request.nextUrl.origin}/admin?auth=error`);
     }
 
+    console.log('Found config:', {
+      id: config.id,
+      hasAppId: !!config.appId,
+      hasAppSecret: !!config.appSecret,
+      appIdLength: config.appId?.length,
+      appSecretLength: config.appSecret?.length
+    });
+
     const feishuClient = new FeishuClient(config.appId, config.appSecret);
     const protocol = request.headers.get('x-forwarded-proto') || 'https';
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
     const baseUrl = `${protocol}://${host}`;
     const redirectUri = `${baseUrl}/api/feishu/callback`;
+    console.log('Using redirectUri:', redirectUri);
     const tokens = await feishuClient.exchangeCodeForToken(code, redirectUri);
 
     await prisma.feishuSyncConfig.update({
