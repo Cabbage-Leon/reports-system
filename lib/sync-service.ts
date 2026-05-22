@@ -5,34 +5,48 @@ import { saveFile } from './storage';
 type ReportTypeKey = 'day' | 'week' | 'month';
 
 export class SyncService {
-  private getStartDate(range: string, days?: number): Date {
+  private getDateRange(range: string, days?: number): { start: Date; end: Date } {
     const now = new Date();
+    let start: Date;
+    let end: Date;
 
     switch (range) {
       case 'today':
-        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        break;
       case 'this_week':
         const day = now.getDay();
         const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(now.setDate(diff));
+        start = new Date(now.setDate(diff));
+        start.setHours(0, 0, 0, 0);
+        end = new Date();
+        break;
       case 'custom':
         if (days) {
           const customDate = new Date();
           customDate.setDate(customDate.getDate() - days);
-          return customDate;
+          start = customDate;
+          start.setHours(0, 0, 0, 0);
+        } else {
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         }
-        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end = new Date();
+        break;
       default:
-        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     }
+
+    return { start, end };
   }
 
-  private isFileInRange(updateTime: string | undefined, startDate: Date): boolean {
+  private isFileInRange(updateTime: string | undefined, startDate: Date, endDate: Date): boolean {
     if (!updateTime) {
       return false;
     }
     const fileUpdateTime = new Date(parseInt(updateTime) * 1000);
-    return fileUpdateTime >= startDate;
+    return fileUpdateTime >= startDate && fileUpdateTime <= endDate;
   }
 
   private isFileTypeMatch(fileName: string | undefined, allowedTypes: string[]): boolean {
@@ -98,13 +112,13 @@ export class SyncService {
       const files = await feishuClient.listFiles(config.folderToken || undefined);
       console.log(`从飞书获取到 ${files.length} 个文件`);
 
-      const startDate = this.getStartDate(config.syncRange, config.syncDays);
-      console.log(`同步时间范围: ${startDate.toLocaleString()} 至 ${new Date().toLocaleString()}`);
+      const dateRange = this.getDateRange(config.syncRange, config.syncDays);
+      console.log(`同步时间范围: ${dateRange.start.toLocaleString()} 至 ${dateRange.end.toLocaleString()}`);
 
       console.log('文件数据样本 (前3个):', files.slice(0, 3));
       
       const filteredFiles = files.filter(file => {
-        const inRange = this.isFileInRange(file.updateTime, startDate);
+        const inRange = this.isFileInRange(file.updateTime, dateRange.start, dateRange.end);
         
         if (!inRange) {
           console.log(`跳过文件 "${file.title || 'unnamed'}": 不在时间范围内`);
