@@ -279,4 +279,52 @@ export class FeishuClient {
 
     return data.data?.content || '';
   }
+
+  async getFileContent(fileToken: string, fileType: string): Promise<{ content: string; format: string }> {
+    const token = await this.getAccessToken();
+
+    switch (fileType) {
+      case 'docx':
+        const content = await this.getDocxContent(fileToken);
+        return { content, format: 'markdown' };
+
+      case 'sheet':
+      case 'bitable':
+      case 'mindnote':
+      case 'doc':
+      case 'file':
+      default:
+        try {
+          const response = await fetch(
+            `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          const text = await blob.text();
+
+          let format = 'text';
+          if (fileType === 'doc') {
+            format = 'doc';
+          } else if (fileType === 'sheet') {
+            format = 'spreadsheet';
+          } else {
+            format = 'text';
+          }
+
+          return { content: text, format };
+        } catch (error) {
+          console.error(`Failed to download file ${fileToken}:`, error);
+          return { content: '', format: 'text' };
+        }
+    }
+  }
 }

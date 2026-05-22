@@ -83,6 +83,19 @@ export class SyncService {
     return allowedTypes.some(type => lowerFileName.endsWith(`.${type.toLowerCase()}`));
   }
 
+  private isFeishuFileTypeMatch(fileType: string, allowedTypes: string[]): boolean {
+    const typeMapping: Record<string, string[]> = {
+      'docx': ['docx', 'md'],
+      'sheet': ['xlsx', 'csv'],
+      'bitable': ['bitable'],
+      'doc': ['doc'],
+      'file': allowedTypes,
+    };
+
+    const mappedTypes = typeMapping[fileType] || typeMapping['file'];
+    return mappedTypes.some(type => allowedTypes.includes(type));
+  }
+
   async syncFromFeishu(configId: string): Promise<{
     success: number;
     failed: number;
@@ -176,13 +189,23 @@ export class SyncService {
             continue;
           }
 
-          console.log(`正在同步: ${file.title}`);
+          console.log(`正在同步: ${file.title} (type: ${file.type})`);
+
+          if (!this.isFeishuFileTypeMatch(file.type, config.fileTypes)) {
+            console.log(`跳过不支持的文件类型: ${file.title} (type: ${file.type})`);
+            continue;
+          }
 
           let content = '';
+          let fileFormat = 'text';
+          let fileExtension = '.txt';
+
           if (file.type === 'docx') {
             content = await feishuClient.getDocxContent(file.token);
+            fileFormat = 'markdown';
+            fileExtension = '.md';
           } else {
-            console.log(`跳过非 docx 类型文件: ${file.title} (type: ${file.type})`);
+            console.log(`跳过不支持的文件类型: ${file.title} (type: ${file.type})`);
             continue;
           }
 
@@ -191,8 +214,16 @@ export class SyncService {
             continue;
           }
 
-          const fileName = `${file.title}.md`;
-          const filePath = await saveFile('reports', fileName, content, 'text/markdown');
+          const fileName = `${file.title}${fileExtension}`;
+          let contentType = 'text/plain';
+          
+          if (fileFormat === 'markdown') {
+            contentType = 'text/markdown';
+          } else if (fileFormat === 'html') {
+            contentType = 'text/html';
+          }
+
+          const filePath = await saveFile('reports', fileName, content, contentType);
 
           await prisma.report.create({
             data: {
@@ -201,6 +232,7 @@ export class SyncService {
               typeText: config.reportType === 'day' ? '日报' : config.reportType === 'week' ? '周报' : '月报',
               topic: config.topic,
               filePath: filePath,
+              fileFormat: fileFormat,
               source: 'feishu',
               sourceId: file.token,
               syncTime: new Date(),
@@ -208,7 +240,7 @@ export class SyncService {
           });
 
           success++;
-          console.log(`同步成功: ${file.title}`);
+          console.log(`同步成功: ${file.title} (format: ${fileFormat})`);
         } catch (error) {
           failed++;
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';

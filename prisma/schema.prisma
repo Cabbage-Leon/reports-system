@@ -14,6 +14,7 @@ model Report {
   typeText    String
   topic       String
   filePath    String
+  fileFormat  String   @default("html") // 原始文件格式: html, markdown, pdf, docx, doc, txt
   createTime  DateTime @default(now())
   updateTime  DateTime @updatedAt
   source      String?  @default("manual") // manual, feishu, api

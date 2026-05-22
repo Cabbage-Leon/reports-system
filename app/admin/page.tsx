@@ -27,6 +27,7 @@ import {
   Shield,
 } from 'lucide-react'
 import { ToastContainer } from '@/components/ErrorToast'
+import { MultiFormatPreview } from '@/components/MultiFormatPreview'
 
 interface Report {
   id: string
@@ -35,6 +36,7 @@ interface Report {
   typeText: string
   topic: string
   filePath: string
+  fileFormat: string
   createTime: string
   updateTime: string
   content?: string
@@ -1259,11 +1261,10 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="flex-1 overflow-hidden">
-              <iframe
-                srcDoc={selectedReport.content}
-                className="w-full h-full border-none bg-white"
+              <MultiFormatPreview
+                content={selectedReport.content || ''}
+                format={selectedReport.fileFormat || 'html'}
                 title={selectedReport.title}
-                sandbox="allow-scripts allow-same-origin"
               />
             </div>
           </div>
