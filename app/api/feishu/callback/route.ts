@@ -20,14 +20,15 @@ export async function GET(request: NextRequest) {
     });
 
     if (!config) {
-      return NextResponse.json(
-        { error: 'Config not found' },
-        { status: 404 }
-      );
+      console.error('Config not found for state:', state);
+      return NextResponse.redirect(`${request.nextUrl.origin}/admin?auth=error`);
     }
 
     const feishuClient = new FeishuClient(config.appId, config.appSecret);
-    const redirectUri = `${request.nextUrl.origin}/api/feishu/callback`;
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
+    const redirectUri = `${baseUrl}/api/feishu/callback`;
     const tokens = await feishuClient.exchangeCodeForToken(code, redirectUri);
 
     await prisma.feishuSyncConfig.update({

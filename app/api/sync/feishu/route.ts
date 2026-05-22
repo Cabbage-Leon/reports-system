@@ -58,7 +58,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Config not found' }, { status: 404 });
       }
       const feishuClient = new FeishuClient(config.appId, config.appSecret);
-      const baseUrl = request.headers.get('host') ? `https://${request.headers.get('host')}` : 'http://localhost:3000';
+      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
       const redirectUri = `${baseUrl}/api/feishu/callback`;
       const authUrl = feishuClient.getOAuthUrl(redirectUri, configId);
       return NextResponse.json({ url: authUrl });
