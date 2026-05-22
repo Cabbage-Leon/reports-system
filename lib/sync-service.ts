@@ -128,6 +128,12 @@ export class SyncService {
       });
 
       console.log(`经过过滤，剩余 ${filteredFiles.length} 个文件待同步`);
+      
+      const fileTypeStats = filteredFiles.reduce((acc, file) => {
+        acc[file.type] = (acc[file.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log('文件类型统计:', fileTypeStats);
 
       const existingReports = await prisma.report.findMany({
         where: {

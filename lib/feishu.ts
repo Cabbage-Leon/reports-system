@@ -232,17 +232,23 @@ export class FeishuClient {
       }
 
       const files = data.data?.files || [];
-      allFiles.push(...files.map(file => ({
+      console.log('Raw files from Feishu API (first 5):', files.slice(0, 5));
+      
+      const filteredFiles = files.filter(file => file.type !== 'folder');
+      console.log('Filtered files (excluding folders):', filteredFiles.length);
+      
+      allFiles.push(...filteredFiles.map(file => ({
         token: file.token,
-        title: file.title,
+        title: file.name || file.title || 'Untitled',
         type: file.type,
-        updateTime: file.update_time,
+        updateTime: file.modified_time || file.update_time || file.create_time || '',
       })));
 
       hasMore = !!data.data?.has_more;
       pageToken = data.data?.page_token || '';
     }
 
+    console.log('Total files returned:', allFiles.length);
     return allFiles;
   }
 
