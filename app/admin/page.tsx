@@ -581,7 +581,8 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <>
+      <div className="min-h-screen bg-stone-50">
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-40">
         <div className="h-14 px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -1484,6 +1485,6 @@ export default function AdminPage() {
         </>
       )}
     </div>
-  </div>
-  <ToastContainer errors={errors} onRemove={removeError} />
+    <ToastContainer errors={errors} onRemove={removeError} />
+  </>
 )
