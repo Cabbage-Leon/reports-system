@@ -3,6 +3,9 @@ interface FeishuTokenResponse {
   msg: string;
   tenant_access_token?: string;
   expire?: number;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
 }
 
 interface FeishuListFilesResponse {
@@ -22,7 +25,7 @@ interface FeishuListFilesResponse {
   };
 }
 
-interface FeishuDocumentContentResponse {
+interface FeishuDocxContentResponse {
   code: number;
   msg: string;
   data?: {
@@ -33,12 +36,95 @@ interface FeishuDocumentContentResponse {
 export class FeishuClient {
   private appId: string;
   private appSecret: string;
+  private userAccessToken?: string;
   private tenantAccessToken: string | null = null;
   private tokenExpireTime: number = 0;
 
-  constructor(appId: string, appSecret: string) {
+  constructor(appId: string, appSecret: string, userAccessToken?: string) {
     this.appId = appId;
     this.appSecret = appSecret;
+    this.userAccessToken = userAccessToken;
+  }
+
+  getOAuthUrl(redirectUri: string, state: string = ''): string {
+    const url = new URL('https://open.feishu.cn/open-apis/authen/v1/authorize');
+    url.searchParams.set('app_id', this.appId);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'drive:drive docx:document');
+    if (state) {
+      url.searchParams.set('state', state);
+    }
+    return url.toString();
+  }
+
+  async exchangeCodeForToken(code: string, redirectUri: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expireTime: Date;
+  }> {
+    const response = await fetch('https://open.feishu.cn/open-apis/authen/v1/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        grant_type: 'authorization_code',
+        client_id: this.appId,
+        client_secret: this.appSecret,
+        code: code,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    const data: FeishuTokenResponse = await response.json();
+    if (data.code !== 0) {
+      throw new Error(`Failed to exchange code: ${data.msg}`);
+    }
+
+    if (!data.access_token || !data.refresh_token || !data.expires_in) {
+      throw new Error('Invalid token response');
+    }
+
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expireTime: new Date(Date.now() + data.expires_in * 1000),
+    };
+  }
+
+  async refreshUserToken(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expireTime: Date;
+  }> {
+    const response = await fetch('https://open.feishu.cn/open-apis/authen/v1/refresh_access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        grant_type: 'refresh_token',
+        client_id: this.appId,
+        client_secret: this.appSecret,
+        refresh_token: refreshToken,
+      }),
+    });
+
+    const data: FeishuTokenResponse = await response.json();
+    if (data.code !== 0) {
+      throw new Error(`Failed to refresh token: ${data.msg}`);
+    }
+
+    if (!data.access_token || !data.refresh_token || !data.expires_in) {
+      throw new Error('Invalid token response');
+    }
+
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expireTime: new Date(Date.now() + data.expires_in * 1000),
+    };
   }
 
   private async getTenantAccessToken(): Promise<string> {
@@ -64,7 +150,7 @@ export class FeishuClient {
     }
 
     this.tenantAccessToken = data.tenant_access_token || null;
-    this.tokenExpireTime = now + (data.expire || 7200) * 1000 - 60000; // 提前 1 分钟刷新
+    this.tokenExpireTime = now + (data.expire || 7200) * 1000 - 60000;
 
     if (!this.tenantAccessToken) {
       throw new Error('No tenant access token received');
@@ -73,13 +159,20 @@ export class FeishuClient {
     return this.tenantAccessToken;
   }
 
+  private async getAccessToken(): Promise<string> {
+    if (this.userAccessToken) {
+      return this.userAccessToken;
+    }
+    return this.getTenantAccessToken();
+  }
+
   async listFiles(folderToken?: string): Promise<Array<{
     token: string;
     title: string;
     type: string;
     updateTime: string;
   }>> {
-    const token = await this.getTenantAccessToken();
+    const token = await this.getAccessToken();
     const allFiles: Array<{
       token: string;
       title: string;
@@ -97,7 +190,7 @@ export class FeishuClient {
       if (pageToken) {
         url.searchParams.set('page_token', pageToken);
       }
-      url.searchParams.set('page_size', '100'); // 每页最大数量
+      url.searchParams.set('page_size', '100');
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -125,8 +218,8 @@ export class FeishuClient {
     return allFiles;
   }
 
-  async getDocumentContent(docToken: string): Promise<string> {
-    const token = await this.getTenantAccessToken();
+  async getDocxContent(docToken: string): Promise<string> {
+    const token = await this.getAccessToken();
 
     const response = await fetch(`https://open.feishu.cn/open-apis/docx/v1/documents/${docToken}/raw_content`, {
       headers: {
@@ -134,33 +227,11 @@ export class FeishuClient {
       },
     });
 
-    const data: FeishuDocumentContentResponse = await response.json();
+    const data: FeishuDocxContentResponse = await response.json();
     if (data.code !== 0) {
       throw new Error(`Failed to get document content: ${data.msg}`);
     }
 
     return data.data?.content || '';
-  }
-
-  async getDocumentHtml(docToken: string): Promise<string> {
-    const rawContent = await this.getDocumentContent(docToken);
-    
-    // 简单转换：将文本转换为 HTML
-    const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; line-height: 1.6; }
-    h1, h2, h3 { color: #333; }
-    p { margin-bottom: 16px; }
-  </style>
-</head>
-<body>
-  <pre style="white-space: pre-wrap; word-wrap: break-word;">${rawContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-</body>
-</html>`;
-
-    return htmlContent;
   }
 }

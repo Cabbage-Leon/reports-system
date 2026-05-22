@@ -37,6 +37,9 @@ model FeishuSyncConfig {
   enabled         Boolean  @default(true)
   appId           String
   appSecret       String
+  userAccessToken String?  // 用户授权的访问令牌（用于个人空间）
+  refreshToken    String?  // 刷新令牌
+  tokenExpireTime DateTime? // token 过期时间
   folderToken     String?  // 飞书文件夹 token
   syncTime        String   @default("09:00") // 同步时间，格式 "HH:MM"
   syncRange       String   @default("today") // 同步范围: today, this_week, custom

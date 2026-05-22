@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/prisma';
 import { syncService } from '@/lib/sync-service';
+import { FeishuClient } from '@/lib/feishu';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -48,18 +49,27 @@ export async function POST(request: Request) {
       return NextResponse.json(config, { status: 201 });
     }
 
+    if (action === 'get-auth-url') {
+      if (!configId) {
+        return NextResponse.json({ error: 'configId is required' }, { status: 400 });
+      }
+      const config = await prisma.feishuSyncConfig.findUnique({ where: { id: configId } });
+      if (!config) {
+        return NextResponse.json({ error: 'Config not found' }, { status: 404 });
+      }
+      const feishuClient = new FeishuClient(config.appId, config.appSecret);
+      const baseUrl = request.headers.get('host') ? `https://${request.headers.get('host')}` : 'http://localhost:3000';
+      const redirectUri = `${baseUrl}/api/feishu/callback`;
+      const authUrl = feishuClient.getOAuthUrl(redirectUri, configId);
+      return NextResponse.json({ url: authUrl });
+    }
+
     if (action === 'sync') {
       if (!configId) {
         return NextResponse.json({ error: 'configId is required' }, { status: 400 });
       }
-
-      const result = await syncService.syncFeishuDocuments(configId);
+      const result = await syncService.syncFromFeishu(configId);
       return NextResponse.json(result);
-    }
-
-    if (action === 'sync-all') {
-      await syncService.syncAllEnabledConfigs();
-      return NextResponse.json({ message: 'Sync all configs started' });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -77,13 +87,6 @@ export async function GET(request: Request) {
   const action = searchParams.get('action');
 
   try {
-    // 定时任务触发的接口（可以使用 Vercel Cron 或其他定时服务）
-    if (action === 'check-time') {
-      await syncService.checkAndSyncTime();
-      return NextResponse.json({ message: 'Time check completed' });
-    }
-
-    // 获取同步配置列表
     const configs = await prisma.feishuSyncConfig.findMany({
       orderBy: { createdAt: 'desc' },
     });

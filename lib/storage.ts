@@ -1,16 +1,26 @@
 import { put, get, del, list } from '@vercel/blob';
 
-export async function saveFile(type: string, filename: string, content: string): Promise<string> {
-  console.log('[Storage] Saving file to Vercel Blob:', { type, filename, contentLength: content.length });
-  
+export async function saveFile(
+  type: string,
+  filename: string,
+  content: string,
+  contentType: string = 'text/html'
+): Promise<string> {
+  console.log('[Storage] Saving file to Vercel Blob:', {
+    type,
+    filename,
+    contentType,
+    contentLength: content.length,
+  });
+
   const blobPath = `${type}/${filename}`;
-  
+
   try {
     const result = await put(blobPath, content, {
       access: 'private',
-      contentType: 'text/html',
+      contentType,
     });
-    
+
     console.log('[Storage] File saved successfully:', result.url);
     return result.url;
   } catch (error) {
@@ -21,7 +31,7 @@ export async function saveFile(type: string, filename: string, content: string):
 
 export async function readFile(filePath: string): Promise<string> {
   console.log('[Storage] Reading file:', filePath);
-  
+
   try {
     const result = await get(filePath, { access: 'private' });
     if (!result || !result.stream) {
@@ -37,7 +47,7 @@ export async function readFile(filePath: string): Promise<string> {
 
 export async function deleteFile(filePath: string): Promise<void> {
   console.log('[Storage] Deleting file:', filePath);
-  
+
   try {
     await del(filePath);
     console.log('[Storage] File deleted successfully');
@@ -49,7 +59,7 @@ export async function deleteFile(filePath: string): Promise<void> {
 
 export async function listFiles(type?: string): Promise<string[]> {
   console.log('[Storage] Listing files:', type);
-  
+
   try {
     const prefix = type ? `${type}/` : '';
     const result = await list({ prefix });
