@@ -309,6 +309,8 @@ export default function AdminPage() {
     setSyncResult(data)
     setSyncLoading(null)
     fetchFeishuConfigs()
+    await fetchReports()
+    await fetchStats()
   }
 
   const handleAuth = async (configId: string) => {
@@ -806,6 +808,13 @@ export default function AdminPage() {
                 />
               </div>
               <button
+                onClick={refreshData}
+                className="btn-secondary flex items-center justify-center gap-2 flex-shrink-0 text-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                刷新数据
+              </button>
+              <button
                 onClick={openUploadModal}
                 className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 text-sm"
               >
@@ -886,8 +895,15 @@ export default function AdminPage() {
                 飞书文档同步配置
               </h2>
               <button
+                onClick={fetchFeishuConfigs}
+                className="btn-secondary flex items-center justify-center gap-2 flex-shrink-0 text-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                刷新配置
+              </button>
+              <button
                 onClick={openCreateConfigModal}
-                className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 text-sm ml-auto"
+                className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 text-sm"
               >
                 <Plus className="w-4 h-4" />
                 添加配置
