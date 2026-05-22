@@ -24,6 +24,7 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Shield,
 } from 'lucide-react'
 
 interface Report {
@@ -43,6 +44,9 @@ interface FeishuSyncConfig {
   enabled: boolean
   appId: string
   appSecret: string
+  userAccessToken: string | null
+  refreshToken: string | null
+  tokenExpireTime: string | null
   folderToken: string | null
   syncTime: string
   syncRange: string
@@ -274,6 +278,21 @@ export default function AdminPage() {
     fetchFeishuConfigs()
   }
 
+  const handleAuth = async (configId: string) => {
+    const res = await fetch('/api/sync/feishu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get-auth-url', configId }),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      window.open(data.url, '_blank')
+    } else {
+      alert('获取授权链接失败')
+    }
+  }
+
   const openEditConfigModal = (config: FeishuSyncConfig) => {
     setEditingConfig(config)
     setSyncForm({
@@ -489,6 +508,20 @@ export default function AdminPage() {
       fetchFeishuConfigs()
     }
   }, [currentView])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const authStatus = params.get('auth')
+    if (authStatus && currentView === 'sync') {
+      if (authStatus === 'success') {
+        setTimeout(() => {
+          fetchFeishuConfigs()
+          params.delete('auth')
+          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
+        }, 500)
+      }
+    }
+  }, [])
 
   const openUploadModal = () => {
     setUploadForm({
@@ -905,6 +938,17 @@ export default function AdminPage() {
                           <span className="flex items-center gap-1">
                             文件类型: {(config as any).fileTypes?.join(', ') || 'html, md'}
                           </span>
+                          {config.userAccessToken ? (
+                            <span className="flex items-center gap-1">
+                              <Shield className="w-3 h-3 text-blue-500" />
+                              <span className="text-blue-600">已授权</span>
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Shield className="w-3 h-3 text-stone-400" />
+                              <span>未授权</span>
+                            </span>
+                          )}
                           {config.lastSyncTime && (
                             <span className="flex items-center gap-1">
                               <CheckCircle className="w-3 h-3 text-green-500" />
@@ -924,6 +968,13 @@ export default function AdminPage() {
                           ) : (
                             <ToggleLeft className="w-5 h-5" />
                           )}
+                        </button>
+                        <button
+                          onClick={() => handleAuth(config.id)}
+                          className={`btn-ghost p-2 ${config.userAccessToken ? 'text-blue-600' : 'text-orange-500'}`}
+                          title={config.userAccessToken ? '重新授权' : '用户授权'}
+                        >
+                          <Shield className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleTestSync(config.id)}
