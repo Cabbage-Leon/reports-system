@@ -27,14 +27,20 @@ export class SyncService {
     }
   }
 
-  private isFileInRange(updateTime: string, startDate: Date): boolean {
+  private isFileInRange(updateTime: string | undefined, startDate: Date): boolean {
+    if (!updateTime) {
+      return false;
+    }
     const fileUpdateTime = new Date(parseInt(updateTime) * 1000);
     return fileUpdateTime >= startDate;
   }
 
-  private isFileTypeMatch(fileName: string, allowedTypes: string[]): boolean {
+  private isFileTypeMatch(fileName: string | undefined, allowedTypes: string[]): boolean {
     if (!allowedTypes || allowedTypes.length === 0) {
       return true;
+    }
+    if (!fileName) {
+      return false;
     }
     const lowerFileName = fileName.toLowerCase();
     return allowedTypes.some(type => lowerFileName.endsWith(`.${type.toLowerCase()}`));
@@ -95,21 +101,16 @@ export class SyncService {
       const startDate = this.getStartDate(config.syncRange, config.syncDays);
       console.log(`同步时间范围: ${startDate.toLocaleString()} 至 ${new Date().toLocaleString()}`);
 
-      const allowedFileTypes = config.fileTypes || ['html', 'md'];
-      console.log(`允许的文件类型: ${allowedFileTypes.join(', ')}`);
-
+      console.log('文件数据样本 (前3个):', files.slice(0, 3));
+      
       const filteredFiles = files.filter(file => {
         const inRange = this.isFileInRange(file.updateTime, startDate);
-        const typeMatch = this.isFileTypeMatch(file.title, allowedFileTypes);
-
+        
         if (!inRange) {
-          console.log(`跳过文件 "${file.title}": 不在时间范围内`);
-        }
-        if (!typeMatch) {
-          console.log(`跳过文件 "${file.title}": 文件类型不匹配`);
+          console.log(`跳过文件 "${file.title || 'unnamed'}": 不在时间范围内`);
         }
 
-        return inRange && typeMatch;
+        return inRange;
       });
 
       console.log(`经过过滤，剩余 ${filteredFiles.length} 个文件待同步`);
