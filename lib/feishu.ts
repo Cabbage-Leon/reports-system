@@ -8,18 +8,22 @@ interface FeishuTokenResponse {
   expires_in?: number;
 }
 
+interface FeishuFile {
+  token: string;
+  title?: string;
+  name?: string;
+  type: string;
+  parent_token: string;
+  create_time?: string;
+  update_time?: string;
+  modified_time?: string;
+}
+
 interface FeishuListFilesResponse {
   code: number;
   msg: string;
   data?: {
-    files: Array<{
-      token: string;
-      title: string;
-      type: string;
-      parent_token: string;
-      create_time: string;
-      update_time: string;
-    }>;
+    files: FeishuFile[];
     has_more?: boolean;
     page_token?: string;
   };
@@ -207,48 +211,55 @@ export class FeishuClient {
       type: string;
       updateTime: string;
     }> = [];
-    let hasMore = true;
-    let pageToken = '';
 
-    while (hasMore) {
-      const url = new URL('https://open.feishu.cn/open-apis/drive/v1/files');
-      if (folderToken) {
-        url.searchParams.set('folder_token', folderToken);
+    const processFolder = async (currentFolderToken?: string) => {
+      let hasMore = true;
+      let pageToken = '';
+
+      while (hasMore) {
+        const url = new URL('https://open.feishu.cn/open-apis/drive/v1/files');
+        if (currentFolderToken) {
+          url.searchParams.set('folder_token', currentFolderToken);
+        }
+        if (pageToken) {
+          url.searchParams.set('page_token', pageToken);
+        }
+        url.searchParams.set('page_size', '100');
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data: FeishuListFilesResponse = await response.json();
+        if (data.code !== 0) {
+          throw new Error(`Failed to list files: ${data.msg}`);
+        }
+
+        const files = data.data?.files || [];
+        
+        for (const file of files) {
+          if (file.type === 'folder') {
+            console.log(`递归遍历文件夹: ${file.name || file.title || 'Unnamed Folder'}`);
+            await processFolder(file.token);
+          } else {
+            allFiles.push({
+              token: file.token,
+              title: file.name || file.title || 'Untitled',
+              type: file.type,
+              updateTime: file.modified_time || file.update_time || file.create_time || '',
+            });
+          }
+        }
+
+        hasMore = !!data.data?.has_more;
+        pageToken = data.data?.page_token || '';
       }
-      if (pageToken) {
-        url.searchParams.set('page_token', pageToken);
-      }
-      url.searchParams.set('page_size', '100');
+    };
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data: FeishuListFilesResponse = await response.json();
-      if (data.code !== 0) {
-        throw new Error(`Failed to list files: ${data.msg}`);
-      }
-
-      const files = data.data?.files || [];
-      console.log('Raw files from Feishu API (first 5):', files.slice(0, 5));
-      
-      const filteredFiles = files.filter(file => file.type !== 'folder');
-      console.log('Filtered files (excluding folders):', filteredFiles.length);
-      
-      allFiles.push(...filteredFiles.map(file => ({
-        token: file.token,
-        title: file.name || file.title || 'Untitled',
-        type: file.type,
-        updateTime: file.modified_time || file.update_time || file.create_time || '',
-      })));
-
-      hasMore = !!data.data?.has_more;
-      pageToken = data.data?.page_token || '';
-    }
-
-    console.log('Total files returned:', allFiles.length);
+    await processFolder(folderToken);
+    console.log('Total files found (including subfolders):', allFiles.length);
     return allFiles;
   }
 
