@@ -5,37 +5,49 @@ import { saveFile } from './storage';
 type ReportTypeKey = 'day' | 'week' | 'month';
 
 export class SyncService {
-  private getDateRange(range: string, days?: number): { start: Date; end: Date } {
+  private getChinaDate(): { year: number; month: number; date: number; day: number } {
     const now = new Date();
+    const offset = 8;
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const chinaTime = new Date(utc + offset * 3600000);
+    
+    return {
+      year: chinaTime.getFullYear(),
+      month: chinaTime.getMonth(),
+      date: chinaTime.getDate(),
+      day: chinaTime.getDay(),
+    };
+  }
+
+  private getDateRange(range: string, days?: number): { start: Date; end: Date } {
+    const chinaDate = this.getChinaDate();
     let start: Date;
     let end: Date;
 
     switch (range) {
       case 'today':
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        start = new Date(chinaDate.year, chinaDate.month, chinaDate.date);
+        end = new Date(chinaDate.year, chinaDate.month, chinaDate.date, 23, 59, 59, 999);
         break;
       case 'this_week':
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-        start = new Date(now.setDate(diff));
+        const diff = chinaDate.date - chinaDate.day + (chinaDate.day === 0 ? -6 : 1);
+        start = new Date(chinaDate.year, chinaDate.month, diff);
         start.setHours(0, 0, 0, 0);
         end = new Date();
         break;
       case 'custom':
         if (days) {
-          const customDate = new Date();
-          customDate.setDate(customDate.getDate() - days);
+          const customDate = new Date(chinaDate.year, chinaDate.month, chinaDate.date - days);
           start = customDate;
           start.setHours(0, 0, 0, 0);
         } else {
-          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          start = new Date(chinaDate.year, chinaDate.month, chinaDate.date);
         }
         end = new Date();
         break;
       default:
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        start = new Date(chinaDate.year, chinaDate.month, chinaDate.date);
+        end = new Date(chinaDate.year, chinaDate.month, chinaDate.date, 23, 59, 59, 999);
     }
 
     return { start, end };
