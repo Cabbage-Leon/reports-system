@@ -91,20 +91,25 @@ export class FeishuClient {
       }),
     });
 
-    const data: FeishuTokenResponse = await response.json();
+    const data: any = await response.json();
+    console.log('Feishu exchange code response:', data);
+    
     if (data.code !== 0) {
       console.error('Feishu exchange code failed:', data);
       throw new Error(`Failed to exchange code: ${data.msg}`);
     }
 
-    if (!data.access_token || !data.refresh_token || !data.expires_in) {
+    const tokenData = data.data;
+    console.log('Token data:', tokenData);
+    
+    if (!tokenData?.access_token || !tokenData?.refresh_token || !tokenData?.expires_in) {
       throw new Error('Invalid token response');
     }
 
     return {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expireTime: new Date(Date.now() + data.expires_in * 1000),
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expireTime: new Date(Date.now() + tokenData.expires_in * 1000),
     };
   }
 
@@ -128,20 +133,25 @@ export class FeishuClient {
       }),
     });
 
-    const data: FeishuTokenResponse = await response.json();
+    const data: any = await response.json();
+    console.log('Feishu refresh token response:', data);
+    
     if (data.code !== 0) {
       console.error('Feishu refresh token failed:', data);
       throw new Error(`Failed to refresh token: ${data.msg}`);
     }
 
-    if (!data.access_token || !data.refresh_token || !data.expires_in) {
+    const tokenData = data.data;
+    console.log('Refresh token data:', tokenData);
+    
+    if (!tokenData?.access_token || !tokenData?.refresh_token || !tokenData?.expires_in) {
       throw new Error('Invalid token response');
     }
 
     return {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expireTime: new Date(Date.now() + data.expires_in * 1000),
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expireTime: new Date(Date.now() + tokenData.expires_in * 1000),
     };
   }
 
